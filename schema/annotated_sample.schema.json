@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Ireen10/HW_Annotation/schema/annotated_sample.schema.json",
+  "title": "AnnotationSample",
+  "description": "Lean per-image record produced by HwAnnotationDataset / parse_sample.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["item_id", "batch", "image", "scenario", "objects"],
+  "properties": {
+    "item_id": { "type": "string" },
+    "batch": { "type": "string" },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "file_path"],
+      "properties": {
+        "url": { "type": "string" },
+        "file_path": { "type": "string" }
+      }
+    },
+    "scenario": { "type": "string" },
+    "objects": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/annotated_object" }
+    }
+  },
+  "$defs": {
+    "annotated_object": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "bbox_xyxy", "relations"],
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "bbox_xyxy": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "relations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/spatial_relation" }
+        }
+      }
+    },
+    "spatial_relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relationship_type", "positional_relationship"],
+      "properties": {
+        "relationship_type": {
+          "type": "string",
+          "enum": ["topology", "image-based", "egocentric", "orientation", "allocentric"]
+        },
+        "positional_relationship": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "reference_label": { "type": ["string", "null"] },
+        "reference_id": { "type": ["string", "null"] },
+        "reference_ambiguous": { "type": "boolean" }
+      }
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Ireen10/HW_Annotation/schema/raw_export_record.schema.json",
+  "title": "HuaweiAnnotationPlatformExportRecord",
+  "description": "One JSONL line from the human annotation platform export.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "batch",
+    "url",
+    "filePath",
+    "text",
+    "item_id",
+    "_annot_worker",
+    "_update_time",
+    "_annot_status",
+    "_labels",
+    "_annotation"
+  ],
+  "properties": {
+    "batch": { "type": "string", "description": "Export batch id, e.g. 202601301744" },
+    "url": { "type": "string", "format": "uri", "description": "Remote image URL" },
+    "filePath": { "type": "string", "description": "Image filename within the batch" },
+    "text": { "type": "string", "description": "Annotation guideline text shown to workers (Chinese)" },
+    "item_id": { "type": "string", "description": "Unique item id for this image task" },
+    "_annot_worker": { "type": "string" },
+    "_update_time": { "type": "string", "description": "Unix epoch ms as string" },
+    "_annot_status": { "type": "string", "enum": ["MERGED", "DRAFT", "SUBMITTED"] },
+    "_labels": { "type": "string", "description": "JSON object serialized as string; often \"{}\"" },
+    "_annotation": {
+      "type": "string",
+      "description": "JSON object serialized as string; see normalized_annotation.schema.json"
+    }
+  }
+}
