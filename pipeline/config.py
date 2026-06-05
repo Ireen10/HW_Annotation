@@ -8,9 +8,14 @@ from dataclasses import dataclass, field
 # Closed-set categories (English) for orientation-participant objects.
 DEFAULT_ORIENTATION_CLOSED_CATEGORIES: tuple[str, ...] = (
     "person",
+    "humanoid_doll",
     "animal",
     "vehicle",
-    "humanoid_doll",
+    "chair_with_backrest",
+    "sofa_with_backrest",
+    "bed",
+    "desk",
+    "screen",
     "other",
 )
 

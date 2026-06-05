@@ -37,10 +37,17 @@ def closed_category_prompt(
     allowed_categories: list[str],
 ) -> list[dict[str, str]]:
     system = (
-        "Classify objects that have orientation into ONE closed-set English category.\n"
+        "Classify orientation-participant objects into ONE closed-set English category.\n"
         "Rules:\n"
         "1. category_en must be exactly one value from allowed_categories.\n"
         "2. Use 'other' when unsure.\n"
+        "3. category_en is a label token for downstream logic, not free-form text.\n"
+        "4. Perspective criteria:\n"
+        "   - person / animal / humanoid_doll: viewpoint-substitutable entities.\n"
+        "   - vehicle: include car, bicycle, bus, train, airplane, ship; heading/viewpoint can be substituted.\n"
+        "   - chair_with_backrest / sofa_with_backrest / bed / desk / screen: use-scenario-substitutable objects;\n"
+        "     orientation inferred by typical use direction (e.g., facing screen, facing desk side, bed head direction).\n"
+        "5. Prefer specific class over 'other' when evidence is sufficient.\n"
         'Output JSON: {"categories": [{"object_id": str, "category_en": str, "reason": str}]}'
     )
     user = json.dumps(
