@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from hw_annotation.parse.sample import (
     AnnotatedObject,
     AnnotationSample,
@@ -12,9 +10,6 @@ from hw_annotation.parse.sample import (
     replace_relation,
 )
 from hw_annotation.parse.types import ReferenceAlignment
-
-if TYPE_CHECKING:
-    from pipeline.utils.llm import OpenAICompatibleClient
 
 
 def initial_alignment(sample: AnnotationSample) -> tuple[tuple[AnnotatedObject, ...], list[dict]]:
@@ -94,76 +89,6 @@ def _issue(
         "current_alignment": alignment,
         "note": note,
     }
-
-
-def apply_llm_alignments(
-    objects: tuple[AnnotatedObject, ...],
-    issues: list[dict],
-    alignments: list[dict],
-) -> tuple[tuple[AnnotatedObject, ...], list[str]]:
-    by_issue = {a.get("issue_id"): a for a in alignments}
-    notes: list[str] = []
-    obj_by_id = {o.id: o for o in objects}
-    updates: dict[tuple[str, int], SpatialRelation] = {}
-
-    for issue in issues:
-        issue_id = issue["issue_id"]
-        result = by_issue.get(issue_id)
-        subject_id = issue["subject_id"]
-        rel_index = issue["rel_index"]
-        rel = obj_by_id[subject_id].relations[rel_index]
-
-        if not result:
-            updates[(subject_id, rel_index)] = replace_relation(
-                rel,
-                reference_alignment="llm_failed",
-                alignment_note="missing LLM entry",
-            )
-            notes.append(f"{issue_id}: missing LLM alignment")
-            continue
-
-        ref_id = result.get("reference_id")
-        reason = (result.get("reason") or "").strip() or None
-        if ref_id and ref_id in obj_by_id:
-            updates[(subject_id, rel_index)] = replace_relation(
-                rel,
-                reference_id=ref_id,
-                reference_alignment="llm_resolved",
-                reference_ambiguous=False,
-                alignment_note=reason,
-            )
-        else:
-            updates[(subject_id, rel_index)] = replace_relation(
-                rel,
-                reference_alignment="llm_failed",
-                alignment_note=reason or "LLM returned null or invalid reference_id",
-            )
-            notes.append(f"{issue_id}: unresolved after LLM")
-
-    new_objects: list[AnnotatedObject] = []
-    for obj in objects:
-        new_rels = [updates.get((obj.id, i), rel) for i, rel in enumerate(obj.relations)]
-        new_objects.append(replace_object(obj, relations=tuple(new_rels)))
-    return tuple(new_objects), notes
-
-
-def align_references_llm(
-    objects: tuple[AnnotatedObject, ...],
-    issues: list[dict],
-    sample: AnnotationSample,
-    client: OpenAICompatibleClient,
-) -> tuple[tuple[AnnotatedObject, ...], list[str]]:
-    from .prompts import reference_alignment_prompt
-
-    scene = {
-        "item_id": sample.item_id,
-        "scenario": sample.scenario,
-        "objects": [{"id": o.id, "label": o.label} for o in objects],
-    }
-    messages = reference_alignment_prompt(scene, issues)
-    raw = client.chat(messages, json_mode=True)
-    payload = client.parse_json_content(raw)
-    return apply_llm_alignments(objects, issues, payload.get("alignments") or [])
 
 
 def orientation_participant_ids(objects: tuple[AnnotatedObject, ...]) -> frozenset[str]:

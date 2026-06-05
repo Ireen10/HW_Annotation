@@ -1,0 +1,13 @@
+input_path: samples/samples.jsonl
+artifacts_dir: artifacts/pipeline
+stages:
+  - name: refine
+    kind: refine
+    enabled: true
+    resume: true
+    output: data.jsonl
+    params:
+      use_llm: true
+      strict_validation: false
+      workers: 8
+      fail_fast: false

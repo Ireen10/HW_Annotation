@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Iterator
+from typing import Iterator, Sequence
 
-from hw_annotation import AnnotationSample, HwAnnotationDataset
+from hw_annotation import AnnotationSample
 from hw_annotation.parse.sample import AnnotatedObject, replace_object, replace_relation
 from hw_annotation.parse.validate_sample import validate_refined_sample
 from hw_annotation.vocab.constants import DIRECTIONAL_3D_VALUES, IMAGE_BASED_VALUES, TOPOLOGY_VALUES
 from pipeline.config import RefineConfig
-from pipeline.utils.llm import LLMError, OpenAICompatibleClient
+from pipeline.utils.llm import OpenAICompatibleClient
 from tqdm.auto import tqdm
 
 from .reference import (
@@ -238,7 +238,7 @@ def refine_sample(
 
 
 def refine_dataset(
-    dataset: HwAnnotationDataset,
+    dataset: Sequence[AnnotationSample],
     *,
     client: OpenAICompatibleClient | None,
     config: RefineConfig | None = None,
@@ -305,7 +305,7 @@ def refine_dataset(
 
 
 def refine_iter(
-    dataset: HwAnnotationDataset,
+    dataset: Sequence[AnnotationSample],
     *,
     client: OpenAICompatibleClient | None,
     config: RefineConfig | None = None,
@@ -326,4 +326,4 @@ def refine_iter(
         yield refine_sample(sample, client=client, config=config)
 
 
-__all__ = ["refine_sample", "refine_dataset", "refine_iter", "LLMError"]
+__all__ = ["refine_sample", "refine_dataset", "refine_iter"]

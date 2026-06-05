@@ -8,6 +8,7 @@ from .parse import (
     SpatialRelation,
     parse_annotation_payload,
     parse_sample,
+    parse_sample_dict,
     validate_refined_sample,
 )
 
@@ -17,6 +18,7 @@ __all__ = [
     "load_raw_records",
     "parse_annotation_payload",
     "parse_sample",
+    "parse_sample_dict",
     "validate_refined_sample",
     "AnnotationSample",
     "AnnotatedObject",

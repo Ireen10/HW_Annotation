@@ -40,4 +40,21 @@ python -m pipeline -i samples/samples.jsonl --no-llm --no-strict
 
 # 可选导出
 python -m pipeline -i samples/samples.jsonl -o artifacts/refined.jsonl
+
+# 使用阶段 artifact（默认开启续跑）
+python -m pipeline -i samples/samples.jsonl --artifacts-dir artifacts/pipeline --workers 8
+
+# 从中间阶段续跑（需要前一阶段 artifact）
+python -m pipeline --pipeline-config config/pipeline.example.yaml --from-stage refine
 ```
+
+## 阶段配置运行
+
+`--pipeline-config` 支持 JSON；也支持 YAML（需安装 `PyYAML`）。  
+每个 stage 指定：
+
+- `name`: 阶段名（用于 `--from-stage`）
+- `kind`: 当前支持 `refine`
+- `resume`: 是否命中 artifact 直接复用
+- `output`: 阶段输出文件名（放在该 stage 目录下）
+- `params`: 阶段参数（`use_llm`、`strict_validation`、`workers`、`fail_fast`、`limit` 等）

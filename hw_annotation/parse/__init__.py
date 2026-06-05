@@ -7,6 +7,7 @@ from .sample import (
     ImageRef,
     SpatialRelation,
     parse_sample,
+    parse_sample_dict,
     replace_object,
     replace_relation,
 )
@@ -15,6 +16,7 @@ from .validate_sample import validate_refined_sample
 __all__ = [
     "parse_annotation_payload",
     "parse_sample",
+    "parse_sample_dict",
     "validate_refined_sample",
     "AnnotationSample",
     "AnnotatedObject",

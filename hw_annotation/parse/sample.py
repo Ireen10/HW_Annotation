@@ -32,6 +32,19 @@ class SpatialRelation:
             reference_ambiguous=bool(raw.get("reference_ambiguous")),
         )
 
+    @classmethod
+    def from_dict(cls, raw: dict[str, Any]) -> SpatialRelation:
+        return cls(
+            relationship_type=raw["relationship_type"],
+            positional_relationship=tuple(raw.get("positional_relationship") or ()),
+            positional_tags=tuple(raw.get("positional_tags") or ()),
+            reference_label=raw.get("reference_label"),
+            reference_id=raw.get("reference_id"),
+            reference_ambiguous=bool(raw.get("reference_ambiguous")),
+            reference_alignment=raw.get("reference_alignment", "none"),
+            alignment_note=raw.get("alignment_note"),
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class AnnotatedObject:
@@ -54,6 +67,22 @@ class AnnotatedObject:
             label=raw["label"],
             bbox_xyxy=(float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3])),
             relations=tuple(SpatialRelation.from_parsed(r) for r in raw.get("relations") or []),
+        )
+
+    @classmethod
+    def from_dict(cls, raw: dict[str, Any]) -> AnnotatedObject:
+        bbox = raw["bbox_xyxy"]
+        return cls(
+            id=raw["id"],
+            label=raw["label"],
+            bbox_xyxy=(float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3])),
+            relations=tuple(SpatialRelation.from_dict(r) for r in raw.get("relations") or ()),
+            name_en=raw.get("name_en"),
+            category_en=raw.get("category_en"),
+            participates_in_orientation=bool(raw.get("participates_in_orientation")),
+            category_source=raw.get("category_source", "none"),
+            closed_category_en=raw.get("closed_category_en"),
+            closed_category_hit=raw.get("closed_category_hit"),
         )
 
 
@@ -153,6 +182,20 @@ def parse_sample(record: dict[str, Any]) -> AnnotationSample:
         scenario=ann["scenario"],
         objects=tuple(AnnotatedObject.from_parsed(o) for o in ann["objects"]),
         is_refined=False,
+    )
+
+
+def parse_sample_dict(record: dict[str, Any]) -> AnnotationSample:
+    """Parse serialized ``AnnotationSample.to_dict()`` payload."""
+    image = record["image"]
+    return AnnotationSample(
+        item_id=record["item_id"],
+        batch=record.get("batch", ""),
+        image=ImageRef(url=image["url"], file_path=image["file_path"]),
+        scenario=record.get("scenario", ""),
+        objects=tuple(AnnotatedObject.from_dict(o) for o in record.get("objects") or ()),
+        is_refined=bool(record.get("is_refined")),
+        refine_notes=tuple(record.get("refine_notes") or ()),
     )
 
 
