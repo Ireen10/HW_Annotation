@@ -1,5 +1,9 @@
-# 后续管线（方案未定）
+# 管线总览
 
-当前仓库只提供 **人工标注 Dataloader**（`HwAnnotationDataset` → `AnnotationSample`）。
+| 阶段 | 模块 | 输出 |
+|------|------|------|
+| 输入 | `hw_annotation` loader | 未精炼 `AnnotationSample` |
+| 精炼 | `pipeline/refine` | 同一类型的 `AnnotationSample`（`is_refined=True`） |
+| 后续 | metadata、QA | 消费精炼后的内存对象 |
 
-Metadata、QA 的字段与构建方式尚未确定；确定后应基于 dataloader 输出扩展，不在此提前定义。
+见 `docs/PIPELINE_REFINE.md`、`docs/PROJECT_LAYOUT.md`。

@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-_SCHEMA_DIR = Path(__file__).resolve().parent.parent / "schema"
+_SCHEMA_DIR = Path(__file__).resolve().parents[2] / "schema"
 
 
 def _load_schema(name: str) -> dict[str, Any]:

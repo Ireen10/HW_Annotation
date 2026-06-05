@@ -6,8 +6,9 @@ import json
 from pathlib import Path
 from typing import Iterator, Sequence
 
+from hw_annotation.parse.sample import AnnotationSample, parse_sample
+
 from .io import iter_raw_records
-from .sample import AnnotationSample, parse_sample
 
 
 class HwAnnotationDataset:

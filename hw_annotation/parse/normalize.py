@@ -5,13 +5,6 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from .constants import (
-    DIRECTIONAL_3D_VALUES,
-    IMAGE_BASED_VALUES,
-    RELATIONSHIP_TYPES,
-    TOPOLOGY_VALUES,
-)
-
 
 def _bbox_from_rectangle_points(points: list[dict[str, float]]) -> list[float]:
     xs = [p["x"] for p in points]
@@ -20,14 +13,10 @@ def _bbox_from_rectangle_points(points: list[dict[str, float]]) -> list[float]:
 
 
 def _normalize_relation(raw: dict[str, Any]) -> dict[str, Any]:
-    rel_type = raw.get("relationship_type", "")
-    if rel_type not in RELATIONSHIP_TYPES:
-        raise ValueError(f"unknown relationship_type: {rel_type!r}")
-
+    """Pass through platform relation fields without vocabulary validation."""
+    rel_type = (raw.get("relationship_type") or "").strip()
     positional = list(raw.get("positional_relationship") or [])
     ref_label = (raw.get("reference_object") or "").strip() or None
-
-    _validate_positional(rel_type, positional)
 
     return {
         "relationship_type": rel_type,
@@ -36,21 +25,6 @@ def _normalize_relation(raw: dict[str, Any]) -> dict[str, Any]:
         "reference_id": None,
         "reference_ambiguous": False,
     }
-
-
-def _validate_positional(rel_type: str, positional: list[str]) -> None:
-    if not positional:
-        raise ValueError(f"{rel_type}: positional_relationship must be non-empty")
-    allowed: frozenset[str]
-    if rel_type == "topology":
-        allowed = TOPOLOGY_VALUES
-    elif rel_type == "image-based":
-        allowed = IMAGE_BASED_VALUES
-    else:
-        allowed = DIRECTIONAL_3D_VALUES
-    unknown = [p for p in positional if p not in allowed]
-    if unknown:
-        raise ValueError(f"{rel_type}: unknown positional values {unknown}")
 
 
 def _resolve_reference_ids(objects: list[dict[str, Any]]) -> None:
@@ -73,9 +47,11 @@ def _resolve_reference_ids(objects: list[dict[str, Any]]) -> None:
 
 def parse_annotation_payload(raw_annotation: str | dict[str, Any]) -> dict[str, Any]:
     """
-    Parse ``_annotation`` (string or dict).
+    Parse ``_annotation`` (string or dict) faithfully.
 
-    Strips UI-only fragment fields (color, selected, points, rotateDegree, …).
+    Strips UI-only fragment fields (color, selected, rotateDegree, …) but does not
+    validate relationship types or positional tokens. Reference ids are filled only
+    when ``reference_label`` exactly matches a single object label.
     """
     if isinstance(raw_annotation, str):
         payload = json.loads(raw_annotation)

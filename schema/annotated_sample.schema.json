@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Ireen10/HW_Annotation/schema/annotated_sample.schema.json",
   "title": "AnnotationSample",
-  "description": "Lean per-image record produced by HwAnnotationDataset / parse_sample.",
+  "description": "Per-image annotation (raw load + optional refine fields).",
   "type": "object",
   "additionalProperties": false,
   "required": ["item_id", "batch", "image", "scenario", "objects"],
@@ -19,6 +19,8 @@
       }
     },
     "scenario": { "type": "string" },
+    "is_refined": { "type": "boolean" },
+    "refine_notes": { "type": "array", "items": { "type": "string" } },
     "objects": {
       "type": "array",
       "minItems": 1,
@@ -33,6 +35,12 @@
       "properties": {
         "id": { "type": "string" },
         "label": { "type": "string" },
+        "name_en": { "type": ["string", "null"] },
+        "category_en": { "type": ["string", "null"] },
+        "participates_in_orientation": { "type": "boolean" },
+        "category_source": { "type": "string", "enum": ["none", "closed", "open"] },
+        "closed_category_en": { "type": ["string", "null"] },
+        "closed_category_hit": { "type": ["boolean", "null"] },
         "bbox_xyxy": {
           "type": "array",
           "items": { "type": "number" },
@@ -56,12 +64,20 @@
         },
         "positional_relationship": {
           "type": "array",
-          "items": { "type": "string" },
-          "minItems": 1
+          "items": { "type": "string" }
+        },
+        "positional_tags": {
+          "type": "array",
+          "items": { "type": "string" }
         },
         "reference_label": { "type": ["string", "null"] },
         "reference_id": { "type": ["string", "null"] },
-        "reference_ambiguous": { "type": "boolean" }
+        "reference_ambiguous": { "type": "boolean" },
+        "reference_alignment": {
+          "type": "string",
+          "enum": ["none", "exact", "ambiguous", "unresolved", "llm_resolved", "llm_failed"]
+        },
+        "alignment_note": { "type": ["string", "null"] }
       }
     }
   }

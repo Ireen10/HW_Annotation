@@ -1,20 +1,18 @@
-"""Huawei spatial annotation export tooling."""
+"""Parse platform ``_annotation`` into lean samples."""
 
-from .loader import HwAnnotationDataset, iter_raw_records, load_raw_records
-from .parse import (
+from .normalize import parse_annotation_payload
+from .sample import (
     AnnotatedObject,
     AnnotationSample,
     ImageRef,
     SpatialRelation,
-    parse_annotation_payload,
     parse_sample,
-    validate_refined_sample,
+    replace_object,
+    replace_relation,
 )
+from .validate_sample import validate_refined_sample
 
 __all__ = [
-    "HwAnnotationDataset",
-    "iter_raw_records",
-    "load_raw_records",
     "parse_annotation_payload",
     "parse_sample",
     "validate_refined_sample",
@@ -22,4 +20,6 @@ __all__ = [
     "AnnotatedObject",
     "SpatialRelation",
     "ImageRef",
+    "replace_object",
+    "replace_relation",
 ]

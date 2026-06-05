@@ -10,9 +10,10 @@
     → parse_sample → AnnotationSample（单图、无 UI 噪声）
 ```
 
-- 类型定义：`hw_annotation/sample.py`
-- `_annotation` 解析：`hw_annotation/normalize.py`（`parse_annotation_payload`）
-- JSON Schema：`schema/*.schema.json`（可选，`hw_annotation/validate.py`）
+- 类型定义：`hw_annotation/parse/sample.py`
+- `_annotation` 解析：`hw_annotation/parse/normalize.py`（`parse_annotation_payload`）
+- 加载：`hw_annotation/loader/`（`dataset.py`、`io.py`）
+- JSON Schema：`schema/*.schema.json`（可选，`hw_annotation/utils/validate.py`）
 
 ## Dataloader：`HwAnnotationDataset`
 
@@ -50,7 +51,7 @@ list(ds)                # 或 ds.samples()
 
 - 首次访问 `len` / `[]` / `guidelines_text` / `load_errors` 时触发全量加载并缓存。
 - **`guidelines_text`**：遍历源文件时，**第一条**带非空 `text` 的行即写入（与 `status_filter` 无关）。
-- **`load_errors`**：某行在 `parse_sample` 中失败（如非法 `relationship_type`、空 `positional_relationship`、未知方位值、fragment 无 `points` 等）时，记录 `"item_id (文件名): 异常"`，**该行不进入数据集**。
+- **`load_errors`**：某行在 `parse_sample` 中失败（如 JSON 损坏、fragment 无 `points` 等）时，记录 `"item_id (文件名): 异常"`，**该行不进入数据集**。
 - 当前样本集无失败行时，`load_errors` 为空列表。
 
 ### 低层 API（不经 Dataset）
@@ -103,7 +104,7 @@ sample = parse_sample(record)                         # AnnotationSample
 - 仅当 `reference_label` 非空时尝试解析 `reference_id`。
 - 匹配为物体 `label` 的**完全相等**，不做子串或模糊匹配（例如参考物写「床」而物体为「前方床」时，`reference_id` 为 `None`）。
 - 无匹配：`reference_id` 保持 `None`，`reference_ambiguous` 为 `False`。
-- 解析阶段会校验 `relationship_type` 与 `positional_relationship` 是否落在允许词表内，非法则整行解析失败并进入 `load_errors`。
+- Loader **不校验**关系类型与方位词表（忠实保留平台取值）；仅 JSON 解析失败、fragment 无 `points` 等结构问题会进入 `load_errors`。词表见 `constants.py`，供管线或可选 schema 校验使用。
 
 ### 调试序列化
 
@@ -122,7 +123,7 @@ sample = parse_sample(record)                         # AnnotationSample
 
 ## 关系类型与方位词表
 
-实现词表：`hw_annotation/constants.py`（含中文展示名 `RELATIONSHIP_TYPE_ZH`、`POSITIONAL_ZH`）。
+实现词表：`hw_annotation/vocab/constants.py`（含中文展示名 `RELATIONSHIP_TYPE_ZH`、`POSITIONAL_ZH`）。
 
 ### `relationship_type`
 
@@ -158,7 +159,7 @@ sample = parse_sample(record)                         # AnnotationSample
 | `annotated_sample.schema.json` | `AnnotationSample.to_dict()` |
 
 ```python
-from hw_annotation.validate import validate_instance
+from hw_annotation.utils.validate import validate_instance
 
 errs = validate_instance(sample.to_dict(), "annotated_sample.schema.json")
 ```
