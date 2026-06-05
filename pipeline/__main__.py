@@ -57,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
     refined = refine_dataset(ds, client=client, config=cfg, limit=args.limit)
     exported = 0
     if args.output:
-        exported = export_samples_jsonl(refined, args.output)
+        exported = export_samples_jsonl(refined, args.output, total=len(refined))
 
     summary = {
         "input": str(args.input),

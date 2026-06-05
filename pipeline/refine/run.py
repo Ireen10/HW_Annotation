@@ -8,6 +8,7 @@ from hw_annotation import AnnotationSample, HwAnnotationDataset
 from hw_annotation.parse.validate_sample import validate_refined_sample
 from pipeline.config import RefineConfig
 from pipeline.utils.llm import LLMError, OpenAICompatibleClient
+from tqdm.auto import tqdm
 
 from .categories import assign_categories
 from .names import assign_english_names
@@ -85,15 +86,23 @@ def refine_dataset(
     client: OpenAICompatibleClient | None,
     config: RefineConfig | None = None,
     limit: int | None = None,
+    show_progress: bool = True,
 ) -> list[AnnotationSample]:
     """Refine samples and return an in-memory list for downstream modules."""
     if limit is not None and limit < 0:
         raise ValueError(f"limit must be >= 0, got {limit}")
-    return [
-        refine_sample(s, client=client, config=config)
-        for i, s in enumerate(dataset)
-        if limit is None or i < limit
-    ]
+    total = len(dataset)
+    if limit is not None:
+        total = min(total, limit)
+    iterator = dataset
+    if show_progress:
+        iterator = tqdm(dataset, total=total, desc="Refining samples")
+    refined: list[AnnotationSample] = []
+    for i, sample in enumerate(iterator):
+        if limit is not None and i >= limit:
+            break
+        refined.append(refine_sample(sample, client=client, config=config))
+    return refined
 
 
 def refine_iter(
@@ -102,10 +111,17 @@ def refine_iter(
     client: OpenAICompatibleClient | None,
     config: RefineConfig | None = None,
     limit: int | None = None,
+    show_progress: bool = True,
 ) -> Iterator[AnnotationSample]:
     if limit is not None and limit < 0:
         raise ValueError(f"limit must be >= 0, got {limit}")
-    for i, sample in enumerate(dataset):
+    total = len(dataset)
+    if limit is not None:
+        total = min(total, limit)
+    iterator = dataset
+    if show_progress:
+        iterator = tqdm(dataset, total=total, desc="Refining samples")
+    for i, sample in enumerate(iterator):
         if limit is not None and i >= limit:
             break
         yield refine_sample(sample, client=client, config=config)
