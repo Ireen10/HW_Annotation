@@ -21,6 +21,17 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Process only the first N samples for quick debugging",
     )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="Number of parallel workers for sample-level refine",
+    )
+    parser.add_argument(
+        "--fail-fast",
+        action="store_true",
+        help="Stop immediately on the first failed sample",
+    )
     parser.add_argument("--no-llm", action="store_true")
     parser.add_argument("--no-strict", action="store_true", help="Keep invalid refined samples with notes")
     parser.add_argument("--llm-base-url", default=None)
@@ -54,7 +65,16 @@ def main(argv: list[str] | None = None) -> int:
 
         client = OpenAICompatibleClient(cfg.llm)
 
-    refined = refine_dataset(ds, client=client, config=cfg, limit=args.limit)
+    refine_errors: list[str] = []
+    refined = refine_dataset(
+        ds,
+        client=client,
+        config=cfg,
+        limit=args.limit,
+        workers=args.workers,
+        skip_errors=not args.fail_fast,
+        errors=refine_errors,
+    )
     exported = 0
     if args.output:
         exported = export_samples_jsonl(refined, args.output, total=len(refined))
@@ -68,8 +88,14 @@ def main(argv: list[str] | None = None) -> int:
         "llm_enabled": cfg.use_llm,
         "strict_validation": cfg.strict_validation,
         "limit": args.limit,
+        "workers": args.workers,
+        "failed_count": len(refine_errors),
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
+    if refine_errors:
+        print("failed_samples:")
+        for err in refine_errors:
+            print(f"  {err}")
     return 0
 
 

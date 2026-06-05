@@ -86,22 +86,64 @@ def refine_dataset(
     client: OpenAICompatibleClient | None,
     config: RefineConfig | None = None,
     limit: int | None = None,
+    workers: int = 1,
+    skip_errors: bool = True,
+    errors: list[str] | None = None,
     show_progress: bool = True,
 ) -> list[AnnotationSample]:
     """Refine samples and return an in-memory list for downstream modules."""
     if limit is not None and limit < 0:
         raise ValueError(f"limit must be >= 0, got {limit}")
+    if workers < 1:
+        raise ValueError(f"workers must be >= 1, got {workers}")
     total = len(dataset)
     if limit is not None:
         total = min(total, limit)
-    iterator = dataset
-    if show_progress:
-        iterator = tqdm(dataset, total=total, desc="Refining samples")
+    samples = [
+        sample
+        for i, sample in enumerate(dataset)
+        if limit is None or i < limit
+    ]
+
+    def _record_error(sample: AnnotationSample, exc: Exception) -> None:
+        if errors is None:
+            return
+        errors.append(f"{sample.item_id}: {exc}")
+
+    if workers > 1:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        refined: list[AnnotationSample | None] = [None] * len(samples)
+        with ThreadPoolExecutor(max_workers=workers) as ex:
+            future_to_idx = {
+                ex.submit(refine_sample, sample, client=client, config=config): idx
+                for idx, sample in enumerate(samples)
+            }
+            completed = as_completed(future_to_idx)
+            if show_progress:
+                completed = tqdm(completed, total=total, desc="Refining samples")
+            for future in completed:
+                idx = future_to_idx[future]
+                sample = samples[idx]
+                try:
+                    refined[idx] = future.result()
+                except Exception as exc:  # noqa: BLE001
+                    if not skip_errors:
+                        raise
+                    _record_error(sample, exc)
+        return [s for s in refined if s is not None]
+
     refined: list[AnnotationSample] = []
-    for i, sample in enumerate(iterator):
-        if limit is not None and i >= limit:
-            break
-        refined.append(refine_sample(sample, client=client, config=config))
+    iterator = samples
+    if show_progress:
+        iterator = tqdm(samples, total=total, desc="Refining samples")
+    for sample in iterator:
+        try:
+            refined.append(refine_sample(sample, client=client, config=config))
+        except Exception as exc:  # noqa: BLE001
+            if not skip_errors:
+                raise
+            _record_error(sample, exc)
     return refined
 
 

@@ -50,4 +50,4 @@ class RefineConfig:
     orientation_closed_categories: tuple[str, ...] = DEFAULT_ORIENTATION_CLOSED_CATEGORIES
     closed_fallback_label: str = CLOSED_FALLBACK_LABEL
     use_llm: bool = True
-    strict_validation: bool = True
+    strict_validation: bool = False
