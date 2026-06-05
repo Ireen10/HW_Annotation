@@ -1,6 +1,7 @@
 .venv*/
 __pychache__/
 *cache*/
+.ipynb_checkpoints/
 
 samples/
 artifacts/

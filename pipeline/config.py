@@ -20,10 +20,10 @@ CLOSED_FALLBACK_LABEL = "other"
 @dataclass(frozen=True, slots=True)
 class LLMSettings:
     base_url: str = "http://127.0.0.1:8848/v1"
-    model: str = "default"
+    model: str = "qwen3vl_32binst"
     api_key: str = "not-needed"
     timeout_s: float = 120.0
-    temperature: float = 0.1
+    temperature: float = 1.0
 
     @classmethod
     def from_env(cls) -> LLMSettings:
