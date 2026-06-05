@@ -47,7 +47,7 @@ def main(argv: list[str] | None = None) -> int:
 
     from hw_annotation import HwAnnotationDataset
 
-    ds = HwAnnotationDataset(args.input)
+    ds = HwAnnotationDataset(args.input, status_filter=None)
     client = None
     if cfg.use_llm:
         from pipeline.utils.llm import OpenAICompatibleClient
