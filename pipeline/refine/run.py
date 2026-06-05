@@ -5,22 +5,181 @@ from __future__ import annotations
 from typing import Iterator
 
 from hw_annotation import AnnotationSample, HwAnnotationDataset
+from hw_annotation.parse.sample import AnnotatedObject, replace_object, replace_relation
 from hw_annotation.parse.validate_sample import validate_refined_sample
+from hw_annotation.vocab.constants import DIRECTIONAL_3D_VALUES, IMAGE_BASED_VALUES, TOPOLOGY_VALUES
 from pipeline.config import RefineConfig
 from pipeline.utils.llm import LLMError, OpenAICompatibleClient
 from tqdm.auto import tqdm
 
-from .categories import assign_categories
-from .names import assign_english_names
 from .reference import (
-    align_references_llm,
     initial_alignment,
     mark_orientation_participation,
 )
-from .tags import (
-    apply_positional_tags_rule,
-    assign_positional_tags_llm,
-)
+from .tags import apply_positional_tags_rule
+
+
+def _allowed_tags(rel_type: str) -> frozenset[str]:
+    if rel_type == "topology":
+        return TOPOLOGY_VALUES
+    if rel_type == "image-based":
+        return IMAGE_BASED_VALUES
+    return DIRECTIONAL_3D_VALUES
+
+
+def _assign_refine_fields_llm(
+    sample: AnnotationSample,
+    objects: tuple[AnnotatedObject, ...],
+    issues: list[dict],
+    client: OpenAICompatibleClient,
+    config: RefineConfig,
+) -> tuple[tuple[AnnotatedObject, ...], list[str]]:
+    from .prompts import unified_refine_prompt
+
+    notes: list[str] = []
+    object_ids = {o.id for o in objects}
+    issue_ids = {issue["issue_id"] for issue in issues}
+    allowed_closed = set(config.orientation_closed_categories)
+    fallback = config.closed_fallback_label
+
+    relation_tasks: list[dict] = []
+    for obj in objects:
+        for idx, rel in enumerate(obj.relations):
+            issue_id = f"{obj.id}:{idx}"
+            need_reference = issue_id in issue_ids
+            need_tags = bool(rel.positional_relationship and not rel.positional_tags)
+            if not need_reference and not need_tags:
+                continue
+            relation_tasks.append(
+                {
+                    "issue_id": issue_id,
+                    "subject_id": obj.id,
+                    "rel_index": idx,
+                    "relationship_type": rel.relationship_type,
+                    "positional_relationship": list(rel.positional_relationship),
+                    "reference_label": rel.reference_label,
+                    "reference_id": rel.reference_id,
+                    "needs_reference_fix": need_reference,
+                    "needs_positional_tags": need_tags,
+                }
+            )
+
+    object_tasks = [
+        {
+            "object_id": obj.id,
+            "label": obj.label,
+            "participates_in_orientation": obj.participates_in_orientation,
+            "name_en": obj.name_en,
+            "category_en": obj.category_en,
+        }
+        for obj in objects
+    ]
+    scene = {
+        "item_id": sample.item_id,
+        "scenario": sample.scenario,
+        "objects": [{"id": o.id, "label": o.label} for o in objects],
+    }
+    messages = unified_refine_prompt(
+        scene,
+        object_tasks,
+        relation_tasks,
+        list(config.orientation_closed_categories),
+        config.closed_fallback_label,
+    )
+    raw = client.chat(messages, json_mode=True)
+    payload = client.parse_json_content(raw)
+
+    object_map = {
+        row.get("object_id"): row
+        for row in (payload.get("objects") or [])
+        if row.get("object_id") in object_ids
+    }
+    relation_map = {
+        row.get("issue_id"): row
+        for row in (payload.get("relations") or [])
+        if row.get("issue_id")
+    }
+
+    updated_objects: list[AnnotatedObject] = []
+    for obj in objects:
+        row = object_map.get(obj.id, {})
+        name_en = (row.get("name_en") or "").strip() or None
+        if not name_en:
+            notes.append(f"{obj.id}: missing name_en from LLM")
+
+        if obj.participates_in_orientation:
+            closed_cat = (row.get("closed_category_en") or "").strip() or fallback
+            closed_hit = closed_cat in allowed_closed and closed_cat != fallback
+            if closed_hit:
+                category_en = closed_cat
+                category_source = "closed"
+            else:
+                category_en = (row.get("category_en") or "").strip() or None
+                category_source = "open"
+                notes.append(f"{obj.id}: closed-set fallback used")
+            if not category_en:
+                notes.append(f"{obj.id}: missing category_en from LLM")
+            new_obj = replace_object(
+                obj,
+                name_en=name_en,
+                category_en=category_en,
+                category_source=category_source,
+                closed_category_en=closed_cat,
+                closed_category_hit=closed_hit,
+            )
+        else:
+            category_en = (row.get("category_en") or "").strip() or None
+            if not category_en:
+                notes.append(f"{obj.id}: missing category_en from LLM")
+            new_obj = replace_object(
+                obj,
+                name_en=name_en,
+                category_en=category_en,
+                category_source="open",
+                closed_category_en=None,
+                closed_category_hit=None,
+            )
+
+        new_rels = []
+        for idx, rel in enumerate(new_obj.relations):
+            issue_id = f"{new_obj.id}:{idx}"
+            rel_row = relation_map.get(issue_id, {})
+            new_rel = rel
+
+            if issue_id in issue_ids:
+                llm_ref_id = rel_row.get("reference_id")
+                if isinstance(llm_ref_id, str) and llm_ref_id in object_ids:
+                    new_rel = replace_relation(
+                        new_rel,
+                        reference_id=llm_ref_id,
+                        reference_ambiguous=False,
+                        reference_alignment="llm_resolved",
+                        alignment_note=(rel_row.get("reason") or "").strip() or None,
+                    )
+                else:
+                    new_rel = replace_relation(
+                        new_rel,
+                        reference_alignment="llm_failed",
+                        alignment_note=(rel_row.get("reason") or "").strip()
+                        or "LLM did not provide a valid reference_id",
+                    )
+                    notes.append(f"{issue_id}: unresolved after LLM")
+
+            if rel.positional_relationship and not new_rel.positional_tags:
+                llm_tags = rel_row.get("positional_tags") or []
+                if isinstance(llm_tags, list):
+                    allowed = _allowed_tags(new_rel.relationship_type)
+                    filtered = tuple(str(t) for t in llm_tags if isinstance(t, str) and t in allowed)
+                else:
+                    filtered = ()
+                if filtered:
+                    new_rel = replace_relation(new_rel, positional_tags=filtered)
+                else:
+                    notes.append(f"{issue_id}: missing/invalid positional_tags from LLM")
+
+            new_rels.append(new_rel)
+        updated_objects.append(replace_object(new_obj, relations=tuple(new_rels)))
+    return tuple(updated_objects), notes
 
 
 def refine_sample(
@@ -41,29 +200,16 @@ def refine_sample(
 
     objects, issues = initial_alignment(sample)
 
-    if issues:
-        if use_llm and client is not None:
-            objects, align_notes = align_references_llm(objects, issues, sample, client)
-            notes.extend(align_notes)
-        else:
-            notes.append(f"{len(issues)} reference issue(s) remain (LLM disabled)")
-
     objects = mark_orientation_participation(objects)
-
-    if use_llm and client is not None:
-        objects, name_notes = assign_english_names(sample, objects, client)
-        notes.extend(name_notes)
-        objects, cat_notes = assign_categories(sample, objects, client, cfg)
-        notes.extend(cat_notes)
-    else:
-        notes.append("English names/categories skipped (LLM disabled)")
-
     objects = apply_positional_tags_rule(objects)
+
     if use_llm and client is not None:
-        objects, tag_notes = assign_positional_tags_llm(sample, objects, client)
-        notes.extend(tag_notes)
+        objects, llm_notes = _assign_refine_fields_llm(sample, objects, issues, client, cfg)
+        notes.extend(llm_notes)
     else:
-        notes.append("positional_tags LLM pass skipped (LLM disabled)")
+        if issues:
+            notes.append(f"{len(issues)} reference issue(s) remain (LLM disabled)")
+        notes.append("English names/categories/positional_tags skipped (LLM disabled)")
 
     refined = sample.with_updates(objects=objects, is_refined=True, refine_notes=tuple(notes))
 
