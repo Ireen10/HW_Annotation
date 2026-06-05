@@ -100,11 +100,14 @@ def unified_refine_prompt(
         "   - closed_category_en must be one of allowed_closed_categories.\n"
         "   - if uncertain, use closed_fallback_label.\n"
         "   - category_en should be the final label (open-set fallback if closed_category_en is fallback).\n"
-        "3. positional_tags must follow relationship_type vocabulary:\n"
+        "3. For open-ended category targets (object_tasks.requires_open_category=true),\n"
+        "   category_en MUST be a specific open-ended English noun phrase (e.g. nightstand, floor lamp),\n"
+        "   and MUST NOT equal closed_fallback_label.\n"
+        "4. positional_tags must follow relationship_type vocabulary:\n"
         "   - topology: in|on|surround\n"
         "   - image-based: up|down|left|right|middle\n"
         "   - egocentric/orientation/allocentric: up|down|left|right|in_front_of|behind\n"
-        "4. If reference cannot be resolved confidently, keep reference_id as null.\n"
+        "5. If reference cannot be resolved confidently, keep reference_id as null.\n"
         "Output JSON schema:\n"
         '{'
         '"objects":[{"object_id":str,"name_en":str,"category_en":str,'

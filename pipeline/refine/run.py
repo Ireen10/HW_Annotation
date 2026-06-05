@@ -69,6 +69,7 @@ def _assign_refine_fields_llm(
             "object_id": obj.id,
             "label": obj.label,
             "participates_in_orientation": obj.participates_in_orientation,
+            "requires_open_category": not obj.participates_in_orientation,
             "name_en": obj.name_en,
             "category_en": obj.category_en,
         }
@@ -115,8 +116,13 @@ def _assign_refine_fields_llm(
                 category_source = "closed"
             else:
                 category_en = (row.get("category_en") or "").strip() or None
+                if category_en == fallback:
+                    category_en = None
                 category_source = "open"
                 notes.append(f"{obj.id}: closed-set fallback used")
+                if not category_en and name_en:
+                    category_en = name_en
+                    notes.append(f"{obj.id}: open-set category fallback to name_en")
             if not category_en:
                 notes.append(f"{obj.id}: missing category_en from LLM")
             new_obj = replace_object(
@@ -129,6 +135,11 @@ def _assign_refine_fields_llm(
             )
         else:
             category_en = (row.get("category_en") or "").strip() or None
+            if category_en == fallback:
+                category_en = None
+            if not category_en and name_en:
+                category_en = name_en
+                notes.append(f"{obj.id}: open-set category fallback to name_en")
             if not category_en:
                 notes.append(f"{obj.id}: missing category_en from LLM")
             new_obj = replace_object(
