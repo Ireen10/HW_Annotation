@@ -99,7 +99,8 @@ class BasePipeline:
                 run_result = task.run(current_samples)
                 output_samples = run_result.samples
                 failed_count = run_result.failed_count
-                self.write_samples(output_samples, output_path)
+                if not run_result.wrote_main_output:
+                    self.write_samples(output_samples, output_path)
                 self._write_task_artifacts(output_path.parent, run_result.artifacts)
 
             current_samples = output_samples
