@@ -8,6 +8,12 @@ stages:
     output: data.jsonl
     params:
       use_llm: true
+      llm_base_url: http://127.0.0.1:8848/v1
+      llm_model: qwen3vl_32binst
+      llm_api_key: not-needed
+      llm_timeout_s: 120
+      llm_temperature: 1.0
       strict_validation: false
+      limit: null
       workers: 8
       fail_fast: false
