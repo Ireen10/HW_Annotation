@@ -34,6 +34,13 @@ def _merge_stage_overrides(base: dict[str, object], args: argparse.Namespace) ->
     return merged
 
 
+def _sanitize_stage_params(params: dict[str, object]) -> dict[str, object]:
+    out = dict(params)
+    if "llm_api_key" in out and out["llm_api_key"] is not None:
+        out["llm_api_key"] = "***"
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run stage-based annotation pipeline")
     parser.add_argument("-i", "--input", default=None)
@@ -41,7 +48,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--pipeline-config", default=None, help="JSON/YAML pipeline config path")
     parser.add_argument(
         "--artifacts-dir",
-        default="artifacts/pipeline",
+        default=None,
         help="Root directory for stage artifacts",
     )
     parser.add_argument(
@@ -63,7 +70,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--workers",
         type=int,
-        default=1,
+        default=None,
         help="Number of parallel workers for sample-level refine",
     )
     parser.add_argument(
@@ -99,7 +106,7 @@ def main(argv: list[str] | None = None) -> int:
         spec = load_pipeline_spec(args.pipeline_config)
         if args.input is not None:
             spec = replace(spec, input_path=args.input)
-        if args.artifacts_dir:
+        if args.artifacts_dir is not None:
             spec = replace(spec, artifacts_dir=args.artifacts_dir)
         spec = replace(
             spec,
@@ -120,12 +127,12 @@ def main(argv: list[str] | None = None) -> int:
             "llm_base_url": cfg.llm.base_url,
             "llm_model": cfg.llm.model,
             "limit": args.limit,
-            "workers": args.workers,
+            "workers": args.workers if args.workers is not None else 1,
             "fail_fast": args.fail_fast,
         }
         spec = build_default_pipeline_spec(
             input_path=args.input or "samples/samples.jsonl",
-            artifacts_dir=args.artifacts_dir,
+            artifacts_dir=args.artifacts_dir or "artifacts/pipeline",
             refine_params=stage_params,
         )
         if args.no_resume:
@@ -148,6 +155,9 @@ def main(argv: list[str] | None = None) -> int:
         "export_path": args.output,
         "load_errors": list(result.load_errors),
         "stage_count": len(result.stages),
+        "effective_stage_params": {
+            stage.name: _sanitize_stage_params(stage.params) for stage in spec.stages
+        },
         "stages": [
             {
                 "name": s.name,
