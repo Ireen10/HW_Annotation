@@ -13,6 +13,7 @@ class TaskRunResult:
     samples: tuple[AnnotationSample, ...]
     failed_count: int = 0
     notes: tuple[str, ...] = field(default_factory=tuple)
+    artifacts: dict[str, object] = field(default_factory=dict)
 
 
 class BaseTask:

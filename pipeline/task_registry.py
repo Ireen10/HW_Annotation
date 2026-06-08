@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from pipeline.base_task import BaseTask
+from pipeline.qa import SpatialRelationQATask
 from pipeline.tasks import RefineTask
 
 TASK_REGISTRY: dict[str, type[BaseTask]] = {
     "refine": RefineTask,
+    "qa": SpatialRelationQATask,
 }
 
 

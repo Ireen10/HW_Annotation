@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -89,6 +90,7 @@ class BasePipeline:
                 output_samples = run_result.samples
                 failed_count = run_result.failed_count
                 self.write_samples(output_samples, output_path)
+                self._write_task_artifacts(output_path.parent, run_result.artifacts)
 
             current_samples = output_samples
             results.append(
@@ -136,3 +138,17 @@ class BasePipeline:
     def _stage_output_path(self, stage, stage_idx: int) -> Path:
         filename = stage.output or "data.jsonl"
         return self.artifacts_root / f"{stage_idx + 1:02d}_{stage.name}" / filename
+
+    def _write_task_artifacts(self, stage_dir: Path, artifacts: dict[str, object]) -> None:
+        if not artifacts:
+            return
+        stage_dir.mkdir(parents=True, exist_ok=True)
+        for name, payload in artifacts.items():
+            path = stage_dir / f"{name}.jsonl"
+            if isinstance(payload, list):
+                with path.open("w", encoding="utf-8") as f:
+                    for row in payload:
+                        f.write(json.dumps(row, ensure_ascii=False) + "\n")
+            else:
+                with path.open("w", encoding="utf-8") as f:
+                    f.write(json.dumps(payload, ensure_ascii=False, indent=2))

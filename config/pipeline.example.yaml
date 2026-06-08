@@ -17,3 +17,10 @@ stages:
       limit: null
       workers: 8
       fail_fast: false
+  - name: qa_metadata
+    kind: qa
+    enabled: false
+    resume: true
+    depends_on: refine
+    output: data.jsonl
+    params: {}
