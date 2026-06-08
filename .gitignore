@@ -3,6 +3,7 @@ __pychache__/
 *cache*/
 .ipynb_checkpoints/
 
+output/
 samples/
 artifacts/
 tests/
