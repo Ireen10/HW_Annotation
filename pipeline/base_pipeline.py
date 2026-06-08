@@ -1,0 +1,138 @@
+"""OpenSpatial-style base pipeline executor."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Callable
+
+from hw_annotation import AnnotationSample
+
+from .base_task import BaseTask
+
+
+@dataclass(frozen=True, slots=True)
+class PipelineStageResult:
+    name: str
+    kind: str
+    output_path: str
+    input_count: int
+    output_count: int
+    resumed: bool
+    failed_count: int
+
+
+class BasePipeline:
+    def __init__(
+        self,
+        *,
+        input_path: str,
+        artifacts_dir: str,
+        stages: tuple,
+        create_task: Callable[[str, str, dict], BaseTask],
+        load_input_samples: Callable[[str], tuple[AnnotationSample, ...]],
+        get_load_errors: Callable[[], tuple[str, ...]],
+        read_samples: Callable[[Path], tuple[AnnotationSample, ...]],
+        write_samples: Callable[[tuple[AnnotationSample, ...], Path], None],
+    ) -> None:
+        self.input_path = input_path
+        self.artifacts_root = Path(artifacts_dir)
+        self.stages = tuple(stage for stage in stages if stage.enabled)
+        self.create_task = create_task
+        self.load_input_samples = load_input_samples
+        self.get_load_errors = get_load_errors
+        self.read_samples = read_samples
+        self.write_samples = write_samples
+
+        self.artifacts_root.mkdir(parents=True, exist_ok=True)
+        self.output_paths = [self._stage_output_path(stage, idx) for idx, stage in enumerate(self.stages)]
+        self.stage_name_to_idx = {stage.name: idx for idx, stage in enumerate(self.stages)}
+        self.tasks = [
+            self.create_task(stage.kind, stage.name, stage.params)
+            for stage in self.stages
+        ]
+
+    def run(
+        self,
+        *,
+        from_stage: str | None = None,
+    ) -> tuple[tuple[AnnotationSample, ...], tuple[PipelineStageResult, ...], tuple[str, ...]]:
+        if not self.stages:
+            raise ValueError("no enabled stages in pipeline")
+
+        start_idx = 0
+        if from_stage is not None:
+            try:
+                start_idx = self.stage_name_to_idx[from_stage]
+            except KeyError as exc:
+                names = [stage.name for stage in self.stages]
+                raise ValueError(f"from_stage {from_stage!r} not found in enabled stages {names}") from exc
+
+        current_samples: tuple[AnnotationSample, ...] | None = None
+        results: list[PipelineStageResult] = []
+
+        for idx, (stage, task) in enumerate(zip(self.stages, self.tasks, strict=True)):
+            if idx < start_idx:
+                continue
+            output_path = self.output_paths[idx]
+
+            if current_samples is None:
+                current_samples = self._load_stage_input(idx)
+
+            input_count = len(current_samples)
+            resumed = stage.resume and output_path.is_file()
+            if resumed:
+                output_samples = self.read_samples(output_path)
+                failed_count = 0
+            else:
+                run_result = task.run(current_samples)
+                output_samples = run_result.samples
+                failed_count = run_result.failed_count
+                self.write_samples(output_samples, output_path)
+
+            current_samples = output_samples
+            results.append(
+                PipelineStageResult(
+                    name=stage.name,
+                    kind=stage.kind,
+                    output_path=str(output_path),
+                    input_count=input_count,
+                    output_count=len(output_samples),
+                    resumed=resumed,
+                    failed_count=failed_count,
+                )
+            )
+
+        if current_samples is None:
+            current_samples = self.load_input_samples(self.input_path)
+
+        return current_samples, tuple(results), self.get_load_errors()
+
+    def _load_stage_input(self, stage_idx: int) -> tuple[AnnotationSample, ...]:
+        stage = self.stages[stage_idx]
+        depends_on = getattr(stage, "depends_on", None)
+        if depends_on:
+            dep_path = self._resolve_dependency_path(depends_on, stage_idx)
+            return self.read_samples(dep_path)
+        if stage_idx == 0:
+            return self.load_input_samples(self.input_path)
+        return self.read_samples(self.output_paths[stage_idx - 1])
+
+    def _resolve_dependency_path(self, depends_on: str, stage_idx: int) -> Path:
+        depends = Path(depends_on)
+        if depends.is_file():
+            return depends
+        if depends.suffix:
+            candidate = self.artifacts_root / depends
+            if candidate.is_file():
+                return candidate
+        if depends_on in self.stage_name_to_idx:
+            dep_idx = self.stage_name_to_idx[depends_on]
+            if dep_idx >= stage_idx:
+                raise ValueError(f"depends_on must reference a previous stage: {depends_on!r}")
+            return self.output_paths[dep_idx]
+        raise FileNotFoundError(f"cannot resolve depends_on={depends_on!r}")
+
+    def _stage_output_path(self, stage, stage_idx: int) -> Path:
+        filename = stage.output or "data.jsonl"
+        return self.artifacts_root / f"{stage_idx + 1:02d}_{stage.name}" / filename

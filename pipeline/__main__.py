@@ -15,7 +15,7 @@ from pipeline.runtime import (
 )
 
 
-def _merge_refine_overrides(base: dict[str, object], args: argparse.Namespace) -> dict[str, object]:
+def _merge_stage_overrides(base: dict[str, object], args: argparse.Namespace) -> dict[str, object]:
     merged = dict(base)
     if args.no_llm:
         merged["use_llm"] = False
@@ -104,9 +104,7 @@ def main(argv: list[str] | None = None) -> int:
         spec = replace(
             spec,
             stages=tuple(
-                replace(stage, params=_merge_refine_overrides(stage.params, args))
-                if stage.kind == "refine"
-                else stage
+                replace(stage, params=_merge_stage_overrides(stage.params, args))
                 for stage in spec.stages
             ),
         )

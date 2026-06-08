@@ -6,3 +6,5 @@ __pychache__/
 samples/
 artifacts/
 tests/
+config/*.yaml
+!config/pipeline.example.yaml
