@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from pipeline.base_task import BaseTask
 from pipeline.qa import SpatialRelationQATask
-from pipeline.tasks import RefineTask
+from pipeline.tasks import QAAggregateTask, QAExportTask, RefineTask
 
 TASK_REGISTRY: dict[str, type[BaseTask]] = {
     "refine": RefineTask,
     "qa": SpatialRelationQATask,
+    "qa_aggregate": QAAggregateTask,
+    "qa_export": QAExportTask,
 }
 
 

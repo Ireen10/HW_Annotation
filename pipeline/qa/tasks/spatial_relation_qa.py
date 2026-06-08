@@ -9,6 +9,8 @@ class SpatialRelationQATask(BaseQATask):
     SUB_TASKS = (
         "scene_caption",
         "image_position",
+        "image_relative_position",
+        "object_orientation",
         "egocentric_reltaion",
         "allocentric_relation",
     )

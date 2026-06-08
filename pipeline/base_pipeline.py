@@ -70,6 +70,7 @@ class BasePipeline:
                 raise ValueError(f"from_stage {from_stage!r} not found in enabled stages {names}") from exc
 
         current_samples: tuple[AnnotationSample, ...] | None = None
+        input_source_path: Path | None = None
         results: list[PipelineStageResult] = []
 
         for idx, (stage, task) in enumerate(zip(self.stages, self.tasks, strict=True)):
@@ -78,10 +79,19 @@ class BasePipeline:
             output_path = self.output_paths[idx]
 
             if current_samples is None:
-                current_samples = self._load_stage_input(idx)
+                current_samples, input_source_path = self._load_stage_input(idx)
+            else:
+                input_source_path = self.output_paths[idx - 1]
 
             input_count = len(current_samples)
             resumed = stage.resume and output_path.is_file()
+            task.set_runtime_context(
+                stage_name=stage.name,
+                stage_kind=stage.kind,
+                input_source_path=str(input_source_path) if input_source_path is not None else None,
+                stage_output_dir=str(output_path.parent),
+                artifacts_root=str(self.artifacts_root),
+            )
             if resumed:
                 output_samples = self.read_samples(output_path)
                 failed_count = 0
@@ -110,15 +120,16 @@ class BasePipeline:
 
         return current_samples, tuple(results), self.get_load_errors()
 
-    def _load_stage_input(self, stage_idx: int) -> tuple[AnnotationSample, ...]:
+    def _load_stage_input(self, stage_idx: int) -> tuple[tuple[AnnotationSample, ...], Path | None]:
         stage = self.stages[stage_idx]
         depends_on = getattr(stage, "depends_on", None)
         if depends_on:
             dep_path = self._resolve_dependency_path(depends_on, stage_idx)
-            return self.read_samples(dep_path)
+            return self.read_samples(dep_path), dep_path
         if stage_idx == 0:
-            return self.load_input_samples(self.input_path)
-        return self.read_samples(self.output_paths[stage_idx - 1])
+            return self.load_input_samples(self.input_path), None
+        prev = self.output_paths[stage_idx - 1]
+        return self.read_samples(prev), prev
 
     def _resolve_dependency_path(self, depends_on: str, stage_idx: int) -> Path:
         depends = Path(depends_on)
@@ -137,18 +148,20 @@ class BasePipeline:
 
     def _stage_output_path(self, stage, stage_idx: int) -> Path:
         filename = stage.output or "data.jsonl"
-        return self.artifacts_root / f"{stage_idx + 1:02d}_{stage.name}" / filename
+        task_name = str((stage.params or {}).get("task_name") or stage.kind)
+        return self.artifacts_root / stage.name / task_name / filename
 
     def _write_task_artifacts(self, stage_dir: Path, artifacts: dict[str, object]) -> None:
         if not artifacts:
             return
         stage_dir.mkdir(parents=True, exist_ok=True)
         for name, payload in artifacts.items():
-            path = stage_dir / f"{name}.jsonl"
             if isinstance(payload, list):
+                path = stage_dir / f"{name}.jsonl"
                 with path.open("w", encoding="utf-8") as f:
                     for row in payload:
                         f.write(json.dumps(row, ensure_ascii=False) + "\n")
             else:
+                path = stage_dir / f"{name}.json"
                 with path.open("w", encoding="utf-8") as f:
                     f.write(json.dumps(payload, ensure_ascii=False, indent=2))

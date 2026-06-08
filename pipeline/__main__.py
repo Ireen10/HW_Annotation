@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from dataclasses import replace
+from pathlib import Path
 
 from pipeline.config import LLMSettings, RefineConfig
 from pipeline.refine.export import export_samples_jsonl
@@ -106,8 +107,9 @@ def main(argv: list[str] | None = None) -> int:
         spec = load_pipeline_spec(args.pipeline_config)
         if args.input is not None:
             spec = replace(spec, input_path=args.input)
-        if args.artifacts_dir is not None:
-            spec = replace(spec, artifacts_dir=args.artifacts_dir)
+        artifacts_root = args.artifacts_dir if args.artifacts_dir is not None else spec.artifacts_dir
+        run_name = Path(args.pipeline_config).stem
+        spec = replace(spec, artifacts_dir=str(Path(artifacts_root) / run_name))
         spec = replace(
             spec,
             stages=tuple(

@@ -2,12 +2,16 @@
 
 from . import allocentric_relation_templates  # noqa: F401
 from . import egocentric_reltaion_templates  # noqa: F401
+from . import image_relative_position_templates  # noqa: F401
 from . import image_position_templates  # noqa: F401
+from . import object_orientation_templates  # noqa: F401
 from . import scene_caption_templates  # noqa: F401
 
 __all__ = [
     "scene_caption_templates",
     "image_position_templates",
+    "image_relative_position_templates",
+    "object_orientation_templates",
     "egocentric_reltaion_templates",
     "allocentric_relation_templates",
 ]

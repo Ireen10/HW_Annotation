@@ -42,9 +42,21 @@ class BaseQATask(BaseTask):
         graph: SceneGraph,
     ) -> list[dict[str, object]]:
         records: list[dict[str, object]] = []
+        sub_task_counts = self._resolve_sub_task_counts()
         for sub_task in self.SUB_TASKS:
-            rec = self.build_subtask_record(sample, graph, sub_task)
-            if rec is not None:
+            target = sub_task_counts.get(sub_task, 1)
+            seen_keys: set[str] = set()
+            attempts = 0
+            max_attempts = max(target * 8, 8)
+            while len([r for r in records if r.get("sub_task") == sub_task]) < target and attempts < max_attempts:
+                rec = self.build_subtask_record(sample, graph, sub_task)
+                attempts += 1
+                if rec is None:
+                    break
+                dedup_key = self._sampling_dedup_key(rec)
+                if dedup_key in seen_keys:
+                    continue
+                seen_keys.add(dedup_key)
                 records.append(rec)
         return records
 
@@ -93,3 +105,30 @@ class BaseQATask(BaseTask):
             "mark_spec": mark_plan.to_dict(),
             "metadata": turn_meta.to_dict(),
         }
+
+    def _resolve_sub_task_counts(self) -> dict[str, int]:
+        raw = self.params.get("sub_tasks")
+        if not isinstance(raw, dict):
+            return {name: 1 for name in self.SUB_TASKS}
+        out: dict[str, int] = {name: 1 for name in self.SUB_TASKS}
+        for name in self.SUB_TASKS:
+            value = raw.get(name)
+            if value is None:
+                continue
+            out[name] = max(0, int(value))
+        return out
+
+    def _sampling_dedup_key(self, record: dict[str, object]) -> str:
+        # In-task dedup key: same task + same unordered object group.
+        import json
+
+        item_id = str(record.get("item_id") or "")
+        sub_task = str(record.get("sub_task") or "")
+        mark_spec = record.get("mark_spec") or {}
+        slots = (mark_spec.get("slots") if isinstance(mark_spec, dict) else None) or []
+        obj_ids = sorted({str(s.get("object_id") or "") for s in slots if isinstance(s, dict)})
+        return json.dumps(
+            {"item_id": item_id, "sub_task": sub_task, "object_group": obj_ids},
+            ensure_ascii=False,
+            sort_keys=True,
+        )

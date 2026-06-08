@@ -23,4 +23,27 @@ stages:
     resume: true
     depends_on: refine
     output: data.jsonl
+    params:
+      sub_tasks:
+        scene_caption: 1
+        image_position: 3
+        image_relative_position: 3
+        object_orientation: 3
+        egocentric_reltaion: 3
+        allocentric_relation: 3
+  - name: qa_aggregate
+    kind: qa_aggregate
+    enabled: false
+    resume: true
+    depends_on: qa_metadata
+    output: data.jsonl
     params: {}
+  - name: qa_export
+    kind: qa_export
+    enabled: false
+    resume: true
+    depends_on: qa_aggregate
+    output: data.jsonl
+    params:
+      shard_size: 8192
+      image_root: null

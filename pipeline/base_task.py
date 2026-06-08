@@ -22,6 +22,10 @@ class BaseTask:
     def __init__(self, *, stage_name: str, params: dict[str, Any]) -> None:
         self.stage_name = stage_name
         self.params = dict(params)
+        self.runtime_context: dict[str, Any] = {}
+
+    def set_runtime_context(self, **kwargs: Any) -> None:
+        self.runtime_context = dict(kwargs)
 
     def run(self, samples: tuple[AnnotationSample, ...]) -> TaskRunResult:
         raise NotImplementedError
