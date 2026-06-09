@@ -19,6 +19,14 @@ from .reference import (
 from .tags import apply_positional_tags_rule
 
 
+class RefineSampleError(RuntimeError):
+    def __init__(self, item_id: str, reason: str, llm_json: object | None = None) -> None:
+        super().__init__(reason)
+        self.item_id = item_id
+        self.reason = reason
+        self.llm_json = llm_json
+
+
 def _allowed_tags(rel_type: str) -> frozenset[str]:
     if rel_type == "topology":
         return TOPOLOGY_VALUES
@@ -33,7 +41,7 @@ def _assign_refine_fields_llm(
     issues: list[dict],
     client: OpenAICompatibleClient,
     config: RefineConfig,
-) -> tuple[tuple[AnnotatedObject, ...], list[str]]:
+) -> tuple[tuple[AnnotatedObject, ...], list[str], object]:
     from .prompts import unified_refine_prompt
 
     notes: list[str] = []
@@ -190,7 +198,7 @@ def _assign_refine_fields_llm(
 
             new_rels.append(new_rel)
         updated_objects.append(replace_object(new_obj, relations=tuple(new_rels)))
-    return tuple(updated_objects), notes
+    return tuple(updated_objects), notes, payload
 
 
 def refine_sample(
@@ -208,33 +216,39 @@ def refine_sample(
     cfg = config or RefineConfig()
     use_llm = cfg.use_llm and client is not None
     notes: list[str] = []
+    llm_payload: object | None = None
 
-    objects, issues = initial_alignment(sample)
+    try:
+        objects, issues = initial_alignment(sample)
 
-    objects = mark_orientation_participation(objects)
-    objects = apply_positional_tags_rule(objects)
+        objects = mark_orientation_participation(objects)
+        objects = apply_positional_tags_rule(objects)
 
-    if use_llm and client is not None:
-        objects, llm_notes = _assign_refine_fields_llm(sample, objects, issues, client, cfg)
-        notes.extend(llm_notes)
-    else:
-        if issues:
-            notes.append(f"{len(issues)} reference issue(s) remain (LLM disabled)")
-        notes.append("English names/categories/positional_tags skipped (LLM disabled)")
+        if use_llm and client is not None:
+            objects, llm_notes, llm_payload = _assign_refine_fields_llm(sample, objects, issues, client, cfg)
+            notes.extend(llm_notes)
+        else:
+            if issues:
+                notes.append(f"{len(issues)} reference issue(s) remain (LLM disabled)")
+            notes.append("English names/categories/positional_tags skipped (LLM disabled)")
 
-    refined = sample.with_updates(objects=objects, is_refined=True, refine_notes=tuple(notes))
+        refined = sample.with_updates(objects=objects, is_refined=True, refine_notes=tuple(notes))
 
-    validation_errors = validate_refined_sample(refined)
-    if validation_errors:
-        refined = refined.with_updates(
-            refine_notes=refined.refine_notes + tuple(f"validation: {e}" for e in validation_errors)
-        )
-        if cfg.strict_validation:
-            raise ValueError(
-                f"refine validation failed for {sample.item_id}: " + "; ".join(validation_errors)
+        validation_errors = validate_refined_sample(refined)
+        if validation_errors:
+            refined = refined.with_updates(
+                refine_notes=refined.refine_notes + tuple(f"validation: {e}" for e in validation_errors)
             )
+            if cfg.strict_validation:
+                raise ValueError(
+                    f"refine validation failed for {sample.item_id}: " + "; ".join(validation_errors)
+                )
 
-    return refined
+        return refined
+    except RefineSampleError:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        raise RefineSampleError(sample.item_id, str(exc), llm_json=llm_payload) from exc
 
 
 def refine_dataset(
@@ -326,4 +340,4 @@ def refine_iter(
         yield refine_sample(sample, client=client, config=config)
 
 
-__all__ = ["refine_sample", "refine_dataset", "refine_iter"]
+__all__ = ["refine_sample", "refine_dataset", "refine_iter", "RefineSampleError"]

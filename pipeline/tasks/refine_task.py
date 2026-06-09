@@ -9,7 +9,7 @@ from pathlib import Path
 from hw_annotation import parse_sample_dict
 from pipeline.base_task import BaseTask, TaskRunResult
 from pipeline.config import LLMSettings, RefineConfig
-from pipeline.refine import refine_sample
+from pipeline.refine import RefineSampleError, refine_sample
 from pipeline.utils.llm import OpenAICompatibleClient
 from tqdm.auto import tqdm
 
@@ -77,6 +77,7 @@ class RefineTask(BaseTask):
                     except Exception as exc:  # noqa: BLE001
                         if fail_fast:
                             raise
+                        _log_refine_failure(sample.item_id, exc)
                         errors.append(f"{sample.item_id}: {exc}")
             else:
                 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -96,6 +97,7 @@ class RefineTask(BaseTask):
                         except Exception as exc:  # noqa: BLE001
                             if fail_fast:
                                 raise
+                            _log_refine_failure(sample.item_id, exc)
                             errors.append(f"{sample.item_id}: {exc}")
 
         return TaskRunResult(
@@ -118,3 +120,16 @@ def _load_existing_samples(path: Path) -> list:
                 raise ValueError(f"{path}:{line_no}: invalid JSON while resuming refine: {exc}") from exc
             rows.append(parse_sample_dict(payload))
     return rows
+
+
+def _log_refine_failure(item_id: str, exc: Exception) -> None:
+    print(f"[refine][failed] item_id={item_id} reason={exc}", flush=True)
+    llm_json = getattr(exc, "llm_json", None)
+    if llm_json is not None:
+        print(
+            "[refine][failed] llm_json="
+            + json.dumps(llm_json, ensure_ascii=False),
+            flush=True,
+        )
+    else:
+        print("[refine][failed] llm_json=<unavailable>", flush=True)
