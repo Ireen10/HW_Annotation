@@ -25,6 +25,8 @@ import pipeline.prompt_templates  # noqa: F401
 class BaseQATask(BaseTask):
     """Builds QA metadata skeleton and keeps samples unchanged."""
 
+    emits_sample_output = False
+    primary_artifact_names = ("qa_unrendered_records",)
     SUB_TASKS: tuple[str, ...] = ()
     LANGUAGE_OPTIONS = {"zh", "en"}
     # Shared instruction pools (task can reuse/override).

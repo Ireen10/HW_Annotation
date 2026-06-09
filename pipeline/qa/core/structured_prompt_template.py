@@ -50,8 +50,12 @@ class StructuredPromptTemplate:
             )
         inst_idx, inst_line = _pick_optional(question_instruction_pool)
         ans_idx, ans_line = _pick_required(profile.answer_templates)
-        question_text = _join([intro_line, stem_line, inst_line])
-        answer_text = ans_line.strip()
+        question_pattern = _join([intro_line, stem_line, inst_line])
+        answer_pattern = ans_line.strip()
+        merged_bindings = dict(question_bindings or {})
+        merged_bindings.update(answer_bindings or {})
+        question_text = _fill(question_pattern, merged_bindings).strip()
+        answer_text = _fill(answer_pattern, merged_bindings).strip()
 
         return PromptRenderRecord(
             template_id=self.template_id,
@@ -108,3 +112,13 @@ def _pick_required(pool: list[str]) -> tuple[int, str]:
 
 def _join(parts: list[str]) -> str:
     return " ".join([p.strip() for p in parts if p and p.strip()]).strip()
+
+
+def _fill(text: str, mapping: dict[str, str] | None) -> str:
+    if not mapping:
+        return text
+    out = text
+    for key, val in mapping.items():
+        if val is not None:
+            out = out.replace(f"[{key}]", str(val))
+    return out

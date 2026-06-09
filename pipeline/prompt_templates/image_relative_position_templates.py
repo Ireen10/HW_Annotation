@@ -39,7 +39,7 @@ ZH_SENTENCE = [
 
 register_oe(
     template_id="image_relative_position.en.open_ended",
-    introduction=["You are given two object placeholders in the same image."],
+    introduction=None,
     stem=[
         "In the image plane, where is [A] relative to [B]? Judge only by left/right/up/down and diagonal directions."
     ],
@@ -53,7 +53,7 @@ register_oe(
 )
 register_mcq(
     template_id="image_relative_position.en.multiple_choice",
-    introduction=["You are given two object placeholders in the same image."],
+    introduction=None,
     stem=[
         "In the image plane, choose the relative direction of [A] with respect to [B]. Options: [OPTIONS_EN]"
     ],
@@ -68,7 +68,7 @@ register_mcq(
 
 register_oe(
     template_id="image_relative_position.zh.open_ended",
-    introduction=["你会看到同一张图中的两个目标占位符。"],
+    introduction=None,
     stem=["在图像平面内，[A] 相对 [B] 位于什么方向？仅按上下左右及对角方向判断。"],
     question_instruction_profiles={"direct": ZH_DIRECT, "sentence": ZH_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={
@@ -80,7 +80,7 @@ register_oe(
 )
 register_mcq(
     template_id="image_relative_position.zh.multiple_choice",
-    introduction=["你会看到同一张图中的两个目标占位符。"],
+    introduction=None,
     stem=["在图像平面内，请选择 [A] 相对 [B] 的方向。选项：[OPTIONS_ZH]"],
     question_instruction_profiles={"direct": ZH_DIRECT, "sentence": ZH_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={

@@ -39,7 +39,7 @@ ZH_SENTENCE = [
 
 register_oe(
     template_id="allocentric_relation.en.open_ended",
-    introduction=["You are given two object placeholders in one image."],
+    introduction=None,
     stem=["[VIEW_EN], where is [A] relative to [B]?"],
     question_instruction_profiles={"direct": EN_DIRECT, "sentence": EN_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={
@@ -51,7 +51,7 @@ register_oe(
 )
 register_mcq(
     template_id="allocentric_relation.en.multiple_choice",
-    introduction=["You are given two object placeholders in one image."],
+    introduction=None,
     stem=["[VIEW_EN], choose where [A] is relative to [B]. Options: [OPTIONS_EN]"],
     question_instruction_profiles={"direct": EN_DIRECT, "sentence": EN_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={
@@ -64,7 +64,7 @@ register_mcq(
 
 register_oe(
     template_id="allocentric_relation.zh.open_ended",
-    introduction=["你会看到同一张图中的两个目标占位符。"],
+    introduction=None,
     stem=["[VIEW_ZH]，[A] 相对 [B] 位于什么方位？"],
     question_instruction_profiles={"direct": ZH_DIRECT, "sentence": ZH_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={
@@ -76,7 +76,7 @@ register_oe(
 )
 register_mcq(
     template_id="allocentric_relation.zh.multiple_choice",
-    introduction=["你会看到同一张图中的两个目标占位符。"],
+    introduction=None,
     stem=["[VIEW_ZH]，请选择 [A] 相对 [B] 的方位。选项：[OPTIONS_ZH]"],
     question_instruction_profiles={"direct": ZH_DIRECT, "sentence": ZH_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={

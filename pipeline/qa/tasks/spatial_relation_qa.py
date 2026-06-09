@@ -67,33 +67,35 @@ class SpatialRelationQATask(BaseQATask):
         q_type: QuestionType,
     ) -> list[BaseQATask.Candidate]:
         del sample
+        lang = self._resolve_lang()
         if sub_task == "scene_caption":
             return []
         if sub_task == "image_position":
-            return self._iter_image_position(graph, q_type)
+            return self._iter_image_position(graph, q_type, lang)
         if sub_task == "image_relative_position":
-            return self._iter_image_relative_position(graph, q_type)
+            return self._iter_image_relative_position(graph, q_type, lang)
         if sub_task == "object_orientation":
-            return self._iter_object_orientation(graph, q_type)
+            return self._iter_object_orientation(graph, q_type, lang)
         if sub_task == "egocentric_reltaion":
-            return self._iter_egocentric(graph, q_type)
+            return self._iter_egocentric(graph, q_type, lang)
         if sub_task == "allocentric_relation":
-            return self._iter_allocentric(graph, q_type)
+            return self._iter_allocentric(graph, q_type, lang)
         return []
 
-    def _iter_image_position(self, graph: SceneGraph, q_type: QuestionType) -> list[BaseQATask.Candidate]:
+    def _iter_image_position(self, graph: SceneGraph, q_type: QuestionType, lang: str) -> list[BaseQATask.Candidate]:
         out: list[BaseQATask.Candidate] = []
         for node in graph.nodes:
             if not image_position_consistent(graph, node):
                 continue
             case = "with_criterion" if random.random() < self.WITH_CRITERION_PROB_IMAGE_POSITION else "without_criterion"
             ans_en, ans_zh = image_position_answer(node)
+            name = node.display_name(lang)
             options_en = "A. left  B. right  C. above  D. below  E. middle"
             options_zh = "A. 左边  B. 右边  C. 上方  D. 下方  E. 中间"
             out.append(
                 self.Candidate(
                     question_bindings={
-                        "A": node.object_label,
+                        "A": name,
                         "CASE": case,
                         "OPTIONS_EN": options_en,
                         "OPTIONS_ZH": options_zh,
@@ -102,13 +104,15 @@ class SpatialRelationQATask(BaseQATask):
                         "X_EN": ans_en,
                         "X_ZH": ans_zh,
                     },
-                    slots=(self._slot("A", node.object_id, node.object_label),),
+                    slots=(self._slot("A", node.object_id, name),),
                     extra={"q_type": q_type.value, "case": case},
                 )
             )
         return out
 
-    def _iter_image_relative_position(self, graph: SceneGraph, q_type: QuestionType) -> list[BaseQATask.Candidate]:
+    def _iter_image_relative_position(
+        self, graph: SceneGraph, q_type: QuestionType, lang: str
+    ) -> list[BaseQATask.Candidate]:
         out: list[BaseQATask.Candidate] = []
         for target in graph.nodes:
             for anchor in graph.nodes:
@@ -119,6 +123,8 @@ class SpatialRelationQATask(BaseQATask):
                 if bbox_iou(target.bbox_xyxy, anchor.bbox_xyxy) > self.STRICT_MAX_IOU:
                     continue
                 direction = infer_image_plane_direction(target, anchor)
+                target_name = target.display_name(lang)
+                anchor_name = anchor.display_name(lang)
                 options_en = (
                     "A. upper-left  B. above  C. upper-right  D. left  E. right  "
                     "F. lower-left  G. below  H. lower-right"
@@ -127,22 +133,22 @@ class SpatialRelationQATask(BaseQATask):
                 out.append(
                     self.Candidate(
                         question_bindings={
-                            "A": target.object_label,
-                            "B": anchor.object_label,
+                            "A": target_name,
+                            "B": anchor_name,
                             "OPTIONS_EN": options_en,
                             "OPTIONS_ZH": options_zh,
                         },
                         answer_bindings={"X_EN": direction.en_label, "X_ZH": direction.zh_label},
                         slots=(
-                            self._slot("A", target.object_id, target.object_label),
-                            self._slot("B", anchor.object_id, anchor.object_label),
+                            self._slot("A", target.object_id, target_name),
+                            self._slot("B", anchor.object_id, anchor_name),
                         ),
                         extra={"q_type": q_type.value, "direction_key": direction.key},
                     )
                 )
         return out
 
-    def _iter_object_orientation(self, graph: SceneGraph, q_type: QuestionType) -> list[BaseQATask.Candidate]:
+    def _iter_object_orientation(self, graph: SceneGraph, q_type: QuestionType, lang: str) -> list[BaseQATask.Candidate]:
         del q_type
         out: list[BaseQATask.Candidate] = []
         for node in graph.nodes:
@@ -150,17 +156,18 @@ class SpatialRelationQATask(BaseQATask):
             if not orientation:
                 continue
             ans_en, ans_zh = directional_answer_from_tokens(orientation)
+            name = node.display_name(lang)
             out.append(
                 self.Candidate(
-                    question_bindings={"A": node.object_label},
+                    question_bindings={"A": name},
                     answer_bindings={"X_EN": ans_en, "X_ZH": ans_zh},
-                    slots=(self._slot("A", node.object_id, node.object_label),),
+                    slots=(self._slot("A", node.object_id, name),),
                     extra={},
                 )
             )
         return out
 
-    def _iter_egocentric(self, graph: SceneGraph, q_type: QuestionType) -> list[BaseQATask.Candidate]:
+    def _iter_egocentric(self, graph: SceneGraph, q_type: QuestionType, lang: str) -> list[BaseQATask.Candidate]:
         out: list[BaseQATask.Candidate] = []
         for target in graph.nodes:
             for anchor in graph.nodes:
@@ -175,6 +182,8 @@ class SpatialRelationQATask(BaseQATask):
                 viewpoint_en = "From the current perspective"
                 viewpoint_zh = "从当前视角看"
                 ans_en, ans_zh = directional_answer_from_tokens(rel)
+                target_name = target.display_name(lang)
+                anchor_name = anchor.display_name(lang)
                 answer_bindings = {
                     "X_EN": ans_en,
                     "X_ZH": ans_zh,
@@ -186,8 +195,8 @@ class SpatialRelationQATask(BaseQATask):
                 out.append(
                     self.Candidate(
                         question_bindings={
-                            "A": target.object_label,
-                            "B": anchor.object_label,
+                            "A": target_name,
+                            "B": anchor_name,
                             "WITH_VIEW_CUE": "1" if with_cue else "0",
                             "VIEW_EN": viewpoint_en,
                             "VIEW_ZH": viewpoint_zh,
@@ -196,15 +205,15 @@ class SpatialRelationQATask(BaseQATask):
                         },
                         answer_bindings=answer_bindings,
                         slots=(
-                            self._slot("A", target.object_id, target.object_label),
-                            self._slot("B", anchor.object_id, anchor.object_label),
+                            self._slot("A", target.object_id, target_name),
+                            self._slot("B", anchor.object_id, anchor_name),
                         ),
                         extra={"with_view_cue": with_cue},
                     )
                 )
         return out
 
-    def _iter_allocentric(self, graph: SceneGraph, q_type: QuestionType) -> list[BaseQATask.Candidate]:
+    def _iter_allocentric(self, graph: SceneGraph, q_type: QuestionType, lang: str) -> list[BaseQATask.Candidate]:
         out: list[BaseQATask.Candidate] = []
         for target in graph.nodes:
             for anchor in graph.nodes:
@@ -217,7 +226,9 @@ class SpatialRelationQATask(BaseQATask):
                     continue
                 if not closed_category_hit(anchor):
                     continue
-                view_en, view_zh = self._allocentric_viewpoint(anchor.object_label, anchor.closed_category_en)
+                anchor_name = anchor.display_name(lang)
+                target_name = target.display_name(lang)
+                view_en, view_zh = self._allocentric_viewpoint(anchor_name, anchor.closed_category_en)
                 ans_en, ans_zh = directional_answer_from_tokens(rel)
                 answer_bindings = {
                     "X_EN": ans_en,
@@ -230,8 +241,8 @@ class SpatialRelationQATask(BaseQATask):
                 out.append(
                     self.Candidate(
                         question_bindings={
-                            "A": target.object_label,
-                            "B": anchor.object_label,
+                            "A": target_name,
+                            "B": anchor_name,
                             "VIEW_EN": view_en,
                             "VIEW_ZH": view_zh,
                             "OPTIONS_EN": options_en,
@@ -239,8 +250,8 @@ class SpatialRelationQATask(BaseQATask):
                         },
                         answer_bindings=answer_bindings,
                         slots=(
-                            self._slot("A", target.object_id, target.object_label),
-                            self._slot("B", anchor.object_id, anchor.object_label),
+                            self._slot("A", target.object_id, target_name),
+                            self._slot("B", anchor.object_id, anchor_name),
                         ),
                         extra={},
                     )

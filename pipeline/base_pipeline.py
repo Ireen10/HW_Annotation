@@ -81,10 +81,14 @@ class BasePipeline:
             if current_samples is None:
                 current_samples, input_source_path = self._load_stage_input(idx)
             else:
-                input_source_path = self.output_paths[idx - 1]
+                prev_output = self.output_paths[idx - 1]
+                prev_task = self.tasks[idx - 1]
+                input_source_path = (
+                    prev_output if prev_task.emits_sample_output else prev_output.parent
+                )
 
             input_count = len(current_samples)
-            resumed = stage.resume and output_path.is_file()
+            resumed = stage.resume and self._stage_output_ready(task, output_path)
             task.set_runtime_context(
                 stage_name=stage.name,
                 stage_kind=stage.kind,
@@ -95,13 +99,16 @@ class BasePipeline:
                 resume_requested=resumed,
             )
             if resumed and not task.incremental_resume_capable:
-                output_samples = self.read_samples(output_path)
+                if task.emits_sample_output:
+                    output_samples = self.read_samples(output_path)
+                else:
+                    output_samples = current_samples
                 failed_count = 0
             else:
                 run_result = task.run(current_samples)
                 output_samples = run_result.samples
                 failed_count = run_result.failed_count
-                if not run_result.wrote_main_output:
+                if task.emits_sample_output and not run_result.wrote_main_output:
                     self.write_samples(output_samples, output_path)
                 self._write_task_artifacts(output_path.parent, run_result.artifacts)
 
@@ -153,6 +160,19 @@ class BasePipeline:
         filename = stage.output or "data.jsonl"
         task_name = str((stage.params or {}).get("task_name") or stage.kind)
         return self.artifacts_root / stage.name / task_name / filename
+
+    def _stage_output_ready(self, task: BaseTask, output_path: Path) -> bool:
+        if task.emits_sample_output:
+            return output_path.is_file()
+        stage_dir = output_path.parent
+        for name in task.primary_artifact_names:
+            if (stage_dir / f"{name}.jsonl").is_file():
+                return True
+            if (stage_dir / f"{name}.json").is_file():
+                return True
+            if (stage_dir / name / "metadata.json").is_file():
+                return True
+        return False
 
     def _write_task_artifacts(self, stage_dir: Path, artifacts: dict[str, object]) -> None:
         if not artifacts:

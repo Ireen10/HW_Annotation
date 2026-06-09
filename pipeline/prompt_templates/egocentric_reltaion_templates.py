@@ -39,7 +39,7 @@ ZH_SENTENCE = [
 
 register_oe(
     template_id="egocentric_reltaion.en.with_cue.open_ended",
-    introduction=["You are given two object placeholders in one image."],
+    introduction=None,
     stem=["From the camera/observer perspective, where is [A] relative to [B]?"],
     question_instruction_profiles={"direct": EN_DIRECT, "sentence": EN_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={
@@ -51,7 +51,7 @@ register_oe(
 )
 register_mcq(
     template_id="egocentric_reltaion.en.with_cue.multiple_choice",
-    introduction=["You are given two object placeholders in one image."],
+    introduction=None,
     stem=["From the camera/observer perspective, choose where [A] is relative to [B]. Options: [OPTIONS_EN]"],
     question_instruction_profiles={"direct": EN_DIRECT, "sentence": EN_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={
@@ -64,7 +64,7 @@ register_mcq(
 
 register_oe(
     template_id="egocentric_reltaion.en.without_cue.open_ended",
-    introduction=["You are given two object placeholders in one image."],
+    introduction=None,
     stem=["Where is [A] relative to [B]?"],
     question_instruction_profiles={"direct": EN_DIRECT, "sentence": EN_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={
@@ -76,7 +76,7 @@ register_oe(
 )
 register_mcq(
     template_id="egocentric_reltaion.en.without_cue.multiple_choice",
-    introduction=["You are given two object placeholders in one image."],
+    introduction=None,
     stem=["Choose where [A] is relative to [B]. Options: [OPTIONS_EN]"],
     question_instruction_profiles={"direct": EN_DIRECT, "sentence": EN_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={
@@ -89,7 +89,7 @@ register_mcq(
 
 register_oe(
     template_id="egocentric_reltaion.zh.with_cue.open_ended",
-    introduction=["你会看到同一张图中的两个目标占位符。"],
+    introduction=None,
     stem=["基于当前观察视角，目标 [A] 相对 [B] 位于什么方位？"],
     question_instruction_profiles={"direct": ZH_DIRECT, "sentence": ZH_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={
@@ -101,7 +101,7 @@ register_oe(
 )
 register_mcq(
     template_id="egocentric_reltaion.zh.with_cue.multiple_choice",
-    introduction=["你会看到同一张图中的两个目标占位符。"],
+    introduction=None,
     stem=["基于当前观察视角，请选择 [A] 相对 [B] 的方位。选项：[OPTIONS_ZH]"],
     question_instruction_profiles={"direct": ZH_DIRECT, "sentence": ZH_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={
@@ -114,7 +114,7 @@ register_mcq(
 
 register_oe(
     template_id="egocentric_reltaion.zh.without_cue.open_ended",
-    introduction=["你会看到同一张图中的两个目标占位符。"],
+    introduction=None,
     stem=["目标 [A] 相对 [B] 位于什么方位？"],
     question_instruction_profiles={"direct": ZH_DIRECT, "sentence": ZH_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={
@@ -126,7 +126,7 @@ register_oe(
 )
 register_mcq(
     template_id="egocentric_reltaion.zh.without_cue.multiple_choice",
-    introduction=["你会看到同一张图中的两个目标占位符。"],
+    introduction=None,
     stem=["请选择 [A] 相对 [B] 的方位。选项：[OPTIONS_ZH]"],
     question_instruction_profiles={"direct": ZH_DIRECT, "sentence": ZH_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={

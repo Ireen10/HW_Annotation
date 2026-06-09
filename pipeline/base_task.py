@@ -20,6 +20,9 @@ class TaskRunResult:
 class BaseTask:
     """OpenSpatial-style base task: subclass and implement ``run``."""
     incremental_resume_capable: bool = False
+    # When False, stage output lives in sidecar artifacts only (no data.jsonl passthrough).
+    emits_sample_output: bool = True
+    primary_artifact_names: tuple[str, ...] = ()
 
     def __init__(self, *, stage_name: str, params: dict[str, Any]) -> None:
         self.stage_name = stage_name

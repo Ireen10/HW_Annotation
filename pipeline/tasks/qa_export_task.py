@@ -10,6 +10,9 @@ from pipeline.export import DEFAULT_SHARD_SIZE, write_sharded_bundle
 
 
 class QAExportTask(BaseTask):
+    emits_sample_output = False
+    primary_artifact_names = ("bundle",)
+
     def run(self, samples: tuple) -> TaskRunResult:
         input_source = self.runtime_context.get("input_source_path")
         output_dir = self.runtime_context.get("stage_output_dir")
@@ -33,7 +36,9 @@ class QAExportTask(BaseTask):
 
 
 def _sibling_artifact_path(input_source_path: str, filename: str) -> str:
-    return str(Path(input_source_path).parent / filename)
+    path = Path(input_source_path)
+    stage_dir = path if path.is_dir() else path.parent
+    return str(stage_dir / filename)
 
 
 def _load_jsonl_records(path: str) -> list[dict]:

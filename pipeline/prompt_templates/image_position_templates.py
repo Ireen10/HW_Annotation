@@ -40,7 +40,7 @@ ZH_SENTENCE = [
 # English: with criterion (90%)
 register_oe(
     template_id="image_position.en.with_criterion.open_ended",
-    introduction=["You are given one object placeholder in an image."],
+    introduction=None,
     stem=[
         "Using the 3x3 image-plane criterion (left/center/right and top/middle/bottom by bbox center), where is [A] in the image?"
     ],
@@ -54,7 +54,7 @@ register_oe(
 )
 register_mcq(
     template_id="image_position.en.with_criterion.multiple_choice",
-    introduction=["You are given one object placeholder in an image."],
+    introduction=None,
     stem=[
         "Using the 3x3 image-plane criterion (left/center/right and top/middle/bottom by bbox center), choose the position of [A]. Options: [OPTIONS_EN]"
     ],
@@ -70,7 +70,7 @@ register_mcq(
 # English: without criterion (10%)
 register_oe(
     template_id="image_position.en.without_criterion.open_ended",
-    introduction=["You are given one object placeholder in an image."],
+    introduction=None,
     stem=["Where is [A] located in this image?"],
     question_instruction_profiles={"direct": EN_DIRECT, "sentence": EN_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={
@@ -82,7 +82,7 @@ register_oe(
 )
 register_mcq(
     template_id="image_position.en.without_criterion.multiple_choice",
-    introduction=["You are given one object placeholder in an image."],
+    introduction=None,
     stem=["Choose where [A] is located in the image. Options: [OPTIONS_EN]"],
     question_instruction_profiles={"direct": EN_DIRECT, "sentence": EN_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={
@@ -96,7 +96,7 @@ register_mcq(
 # Chinese: with criterion (90%)
 register_oe(
     template_id="image_position.zh.with_criterion.open_ended",
-    introduction=["你会看到图中的一个目标占位符。"],
+    introduction=None,
     stem=["按九宫格判定准则（以 bbox 中心划分左右/中、上中下），[A] 位于图像的什么位置？"],
     question_instruction_profiles={"direct": ZH_DIRECT, "sentence": ZH_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={
@@ -108,7 +108,7 @@ register_oe(
 )
 register_mcq(
     template_id="image_position.zh.with_criterion.multiple_choice",
-    introduction=["你会看到图中的一个目标占位符。"],
+    introduction=None,
     stem=["按九宫格判定准则（以 bbox 中心划分左右/中、上中下），请选择 [A] 的位置。选项：[OPTIONS_ZH]"],
     question_instruction_profiles={"direct": ZH_DIRECT, "sentence": ZH_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={
@@ -122,7 +122,7 @@ register_mcq(
 # Chinese: without criterion (10%)
 register_oe(
     template_id="image_position.zh.without_criterion.open_ended",
-    introduction=["你会看到图中的一个目标占位符。"],
+    introduction=None,
     stem=["[A] 在图像中的什么位置？"],
     question_instruction_profiles={"direct": ZH_DIRECT, "sentence": ZH_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={
@@ -134,7 +134,7 @@ register_oe(
 )
 register_mcq(
     template_id="image_position.zh.without_criterion.multiple_choice",
-    introduction=["你会看到图中的一个目标占位符。"],
+    introduction=None,
     stem=["请选择 [A] 在图像中的位置。选项：[OPTIONS_ZH]"],
     question_instruction_profiles={"direct": ZH_DIRECT, "sentence": ZH_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
     answer_templates_by_type={

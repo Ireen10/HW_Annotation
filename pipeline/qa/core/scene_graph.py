@@ -13,9 +13,15 @@ class SceneNode:
     object_label: str
     bbox_xyxy: tuple[float, float, float, float]
     relations: tuple[SpatialRelation, ...]
+    name_en: str | None = None
     category_en: str | None = None
     closed_category_en: str | None = None
     closed_category_hit: bool | None = None
+
+    def display_name(self, lang: str) -> str:
+        if lang == "zh":
+            return self.object_label
+        return (self.name_en or "").strip() or self.object_label
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,6 +41,7 @@ class SceneGraph:
                     object_label=obj.label,
                     bbox_xyxy=obj.bbox_xyxy,
                     relations=obj.relations,
+                    name_en=obj.name_en,
                     category_en=obj.category_en,
                     closed_category_en=obj.closed_category_en,
                     closed_category_hit=obj.closed_category_hit,

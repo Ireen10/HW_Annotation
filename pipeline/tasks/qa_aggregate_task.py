@@ -12,6 +12,9 @@ from pipeline.base_task import BaseTask, TaskRunResult
 class QAAggregateTask(BaseTask):
     """Post-QA aggregator: dedup within task, then merge by image+mark."""
 
+    emits_sample_output = False
+    primary_artifact_names = ("qa_merged_records",)
+
     def run(self, samples: tuple) -> TaskRunResult:
         input_source = self.runtime_context.get("input_source_path")
         if not input_source:
@@ -33,10 +36,11 @@ class QAAggregateTask(BaseTask):
 
 
 def _sibling_artifact_path(input_source_path: str, filename: str) -> str:
-    import os
+    from pathlib import Path
 
-    stage_dir = os.path.dirname(input_source_path)
-    return os.path.join(stage_dir, filename)
+    path = Path(input_source_path)
+    stage_dir = path if path.is_dir() else path.parent
+    return str(stage_dir / filename)
 
 
 def _load_jsonl_records(path: str) -> list[dict]:
