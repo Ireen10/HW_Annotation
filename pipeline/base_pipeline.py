@@ -90,9 +90,11 @@ class BasePipeline:
                 stage_kind=stage.kind,
                 input_source_path=str(input_source_path) if input_source_path is not None else None,
                 stage_output_dir=str(output_path.parent),
+                output_path=str(output_path),
                 artifacts_root=str(self.artifacts_root),
+                resume_requested=resumed,
             )
-            if resumed:
+            if resumed and not task.incremental_resume_capable:
                 output_samples = self.read_samples(output_path)
                 failed_count = 0
             else:

@@ -19,6 +19,7 @@ class TaskRunResult:
 
 class BaseTask:
     """OpenSpatial-style base task: subclass and implement ``run``."""
+    incremental_resume_capable: bool = False
 
     def __init__(self, *, stage_name: str, params: dict[str, Any]) -> None:
         self.stage_name = stage_name
