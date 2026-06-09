@@ -24,6 +24,7 @@ stages:
     depends_on: refine
     output: data.jsonl
     params:
+      lang: en
       sub_tasks:
         scene_caption: 1
         image_position: 3

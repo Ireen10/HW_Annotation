@@ -4,33 +4,135 @@ from __future__ import annotations
 
 from .register_structured import (
     EMPTY_QUESTION_INSTRUCTION,
-    SENTENCE_QUESTION_INSTRUCTIONS,
+    register_mcq,
     register_oe,
 )
 
-INTRODUCTION = [
-    "You are given one image with object placeholders and spatial relation context.",
+EN_DIRECT = [
+    "Answer directly.",
+    "Give a concise answer.",
+    "Reply with only the relation.",
+    "State the relation briefly.",
+    "Use a short direct answer.",
 ]
-
-STEM = [
-    "Describe the egocentric relation between [A] and [B].",
+EN_SENTENCE = [
+    "Answer in a complete sentence.",
+    "Reply in one full sentence.",
+    "Give the answer as a full sentence.",
+    "Respond with one complete sentence.",
+    "Use a complete sentence format.",
 ]
-
-QUESTION_INSTRUCTION_PROFILES = {
-    "direct": EMPTY_QUESTION_INSTRUCTION,
-    "sentence": SENTENCE_QUESTION_INSTRUCTIONS,
-}
-
-ANSWER_TEMPLATES_BY_TYPE = {
-    "direct": ["[X]"],
-    "sentence": ["[X]"],
-}
+ZH_DIRECT = [
+    "直接回答即可。",
+    "简要作答。",
+    "只回答方位。",
+    "用简短答案回答。",
+    "直接给出结果。",
+]
+ZH_SENTENCE = [
+    "请用完整句子回答。",
+    "请用一句完整的话回答。",
+    "请以完整句式作答。",
+    "请用完整陈述句回答。",
+    "请用完整表达回答。",
+]
 
 register_oe(
-    template_id="egocentric_reltaion.open_ended",
-    introduction=INTRODUCTION,
-    stem=STEM,
-    question_instruction_profiles=QUESTION_INSTRUCTION_PROFILES,
-    answer_templates_by_type=ANSWER_TEMPLATES_BY_TYPE,
-    enabled_instruction_types=["direct", "sentence"],
+    template_id="egocentric_reltaion.en.with_cue.open_ended",
+    introduction=["You are given two object placeholders in one image."],
+    stem=["From the camera/observer perspective, where is [A] relative to [B]?"],
+    question_instruction_profiles={"direct": EN_DIRECT, "sentence": EN_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
+    answer_templates_by_type={
+        "direct": ["[X_EN]"],
+        "sentence": ["[VIEW_EN], [A] is [X_EN] relative to [B]."],
+        "free": ["[VIEW_EN], [A] is [X_EN] relative to [B]."],
+    },
+    enabled_instruction_types=["direct", "sentence", "free"],
+)
+register_mcq(
+    template_id="egocentric_reltaion.en.with_cue.multiple_choice",
+    introduction=["You are given two object placeholders in one image."],
+    stem=["From the camera/observer perspective, choose where [A] is relative to [B]. Options: [OPTIONS_EN]"],
+    question_instruction_profiles={"direct": EN_DIRECT, "sentence": EN_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
+    answer_templates_by_type={
+        "direct": ["[X_EN]"],
+        "sentence": ["[VIEW_EN], the correct option is [X_EN]."],
+        "free": ["[VIEW_EN], the correct option is [X_EN]."],
+    },
+    enabled_instruction_types=["direct", "sentence", "free"],
+)
+
+register_oe(
+    template_id="egocentric_reltaion.en.without_cue.open_ended",
+    introduction=["You are given two object placeholders in one image."],
+    stem=["Where is [A] relative to [B]?"],
+    question_instruction_profiles={"direct": EN_DIRECT, "sentence": EN_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
+    answer_templates_by_type={
+        "direct": ["[X_EN]"],
+        "sentence": ["[VIEW_EN], [A] is [X_EN] relative to [B]."],
+        "free": ["[VIEW_EN], [A] is [X_EN] relative to [B]."],
+    },
+    enabled_instruction_types=["direct", "sentence", "free"],
+)
+register_mcq(
+    template_id="egocentric_reltaion.en.without_cue.multiple_choice",
+    introduction=["You are given two object placeholders in one image."],
+    stem=["Choose where [A] is relative to [B]. Options: [OPTIONS_EN]"],
+    question_instruction_profiles={"direct": EN_DIRECT, "sentence": EN_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
+    answer_templates_by_type={
+        "direct": ["[X_EN]"],
+        "sentence": ["[VIEW_EN], the correct option is [X_EN]."],
+        "free": ["[VIEW_EN], the correct option is [X_EN]."],
+    },
+    enabled_instruction_types=["direct", "sentence", "free"],
+)
+
+register_oe(
+    template_id="egocentric_reltaion.zh.with_cue.open_ended",
+    introduction=["你会看到同一张图中的两个目标占位符。"],
+    stem=["基于当前观察视角，目标 [A] 相对 [B] 位于什么方位？"],
+    question_instruction_profiles={"direct": ZH_DIRECT, "sentence": ZH_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
+    answer_templates_by_type={
+        "direct": ["[X_ZH]"],
+        "sentence": ["[VIEW_ZH]，[A] 位于 [B] 的[X_ZH]。"],
+        "free": ["[VIEW_ZH]，[A] 位于 [B] 的[X_ZH]。"],
+    },
+    enabled_instruction_types=["direct", "sentence", "free"],
+)
+register_mcq(
+    template_id="egocentric_reltaion.zh.with_cue.multiple_choice",
+    introduction=["你会看到同一张图中的两个目标占位符。"],
+    stem=["基于当前观察视角，请选择 [A] 相对 [B] 的方位。选项：[OPTIONS_ZH]"],
+    question_instruction_profiles={"direct": ZH_DIRECT, "sentence": ZH_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
+    answer_templates_by_type={
+        "direct": ["[X_ZH]"],
+        "sentence": ["[VIEW_ZH]，正确选项是[X_ZH]。"],
+        "free": ["[VIEW_ZH]，正确选项是[X_ZH]。"],
+    },
+    enabled_instruction_types=["direct", "sentence", "free"],
+)
+
+register_oe(
+    template_id="egocentric_reltaion.zh.without_cue.open_ended",
+    introduction=["你会看到同一张图中的两个目标占位符。"],
+    stem=["目标 [A] 相对 [B] 位于什么方位？"],
+    question_instruction_profiles={"direct": ZH_DIRECT, "sentence": ZH_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
+    answer_templates_by_type={
+        "direct": ["[X_ZH]"],
+        "sentence": ["[VIEW_ZH]，[A] 位于 [B] 的[X_ZH]。"],
+        "free": ["[VIEW_ZH]，[A] 位于 [B] 的[X_ZH]。"],
+    },
+    enabled_instruction_types=["direct", "sentence", "free"],
+)
+register_mcq(
+    template_id="egocentric_reltaion.zh.without_cue.multiple_choice",
+    introduction=["你会看到同一张图中的两个目标占位符。"],
+    stem=["请选择 [A] 相对 [B] 的方位。选项：[OPTIONS_ZH]"],
+    question_instruction_profiles={"direct": ZH_DIRECT, "sentence": ZH_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
+    answer_templates_by_type={
+        "direct": ["[X_ZH]"],
+        "sentence": ["[VIEW_ZH]，正确选项是[X_ZH]。"],
+        "free": ["[VIEW_ZH]，正确选项是[X_ZH]。"],
+    },
+    enabled_instruction_types=["direct", "sentence", "free"],
 )

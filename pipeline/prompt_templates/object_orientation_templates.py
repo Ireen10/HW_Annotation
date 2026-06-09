@@ -4,33 +4,59 @@ from __future__ import annotations
 
 from .register_structured import (
     EMPTY_QUESTION_INSTRUCTION,
-    SENTENCE_QUESTION_INSTRUCTIONS,
     register_oe,
 )
 
-INTRODUCTION = [
-    "You are given one image with an orientation-participating object.",
+EN_DIRECT = [
+    "Answer directly.",
+    "Give a concise answer.",
+    "Reply with only the orientation.",
+    "State the orientation briefly.",
+    "Use a short direct answer.",
 ]
-
-STEM = [
-    "Describe the orientation of [A] in the current image context.",
+EN_SENTENCE = [
+    "Answer in a complete sentence.",
+    "Reply in one full sentence.",
+    "Give the answer as a full sentence.",
+    "Respond with one complete sentence.",
+    "Use a complete sentence format.",
 ]
-
-QUESTION_INSTRUCTION_PROFILES = {
-    "direct": EMPTY_QUESTION_INSTRUCTION,
-    "sentence": SENTENCE_QUESTION_INSTRUCTIONS,
-}
-
-ANSWER_TEMPLATES_BY_TYPE = {
-    "direct": ["[X]"],
-    "sentence": ["[X]"],
-}
+ZH_DIRECT = [
+    "直接回答即可。",
+    "简要作答。",
+    "只回答朝向。",
+    "用简短答案回答。",
+    "直接给出结果。",
+]
+ZH_SENTENCE = [
+    "请用完整句子回答。",
+    "请用一句完整的话回答。",
+    "请以完整句式作答。",
+    "请用完整陈述句回答。",
+    "请用完整表达回答。",
+]
 
 register_oe(
-    template_id="object_orientation.open_ended",
-    introduction=INTRODUCTION,
-    stem=STEM,
-    question_instruction_profiles=QUESTION_INSTRUCTION_PROFILES,
-    answer_templates_by_type=ANSWER_TEMPLATES_BY_TYPE,
-    enabled_instruction_types=["direct", "sentence"],
+    template_id="object_orientation.en.open_ended",
+    introduction=[],
+    stem=["What is the orientation of [A]?"],
+    question_instruction_profiles={"direct": EN_DIRECT, "sentence": EN_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
+    answer_templates_by_type={
+        "direct": ["[X_EN]"],
+        "sentence": ["[A] is oriented toward [X_EN]."],
+        "free": ["[A] is oriented toward [X_EN]."],
+    },
+    enabled_instruction_types=["direct", "sentence", "free"],
+)
+register_oe(
+    template_id="object_orientation.zh.open_ended",
+    introduction=[],
+    stem=["[A] 的朝向是什么？"],
+    question_instruction_profiles={"direct": ZH_DIRECT, "sentence": ZH_SENTENCE, "free": EMPTY_QUESTION_INSTRUCTION},
+    answer_templates_by_type={
+        "direct": ["[X_ZH]"],
+        "sentence": ["[A] 朝向[X_ZH]。"],
+        "free": ["[A] 朝向[X_ZH]。"],
+    },
+    enabled_instruction_types=["direct", "sentence", "free"],
 )
