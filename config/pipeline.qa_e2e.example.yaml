@@ -1,0 +1,47 @@
+# QA end-to-end example: qa_metadata -> qa_aggregate -> qa_export
+#
+# Prerequisite: refined samples must already exist.
+# Default dependency below points to output from `config/pipeline.example.yaml`.
+# If your refine run used a different yaml name, update `depends_on` accordingly.
+#
+# Artifacts for THIS yaml will be written under:
+#   artifacts/pipeline/pipeline.qa_e2e.example/
+
+input_path: samples/samples.jsonl
+artifacts_dir: artifacts/pipeline
+
+stages:
+  - name: qa_metadata
+    kind: qa
+    enabled: true
+    resume: true
+    depends_on: ../pipeline.example/refine/refine/data.jsonl
+    output: data.jsonl
+    params:
+      lang: en
+      sub_tasks:
+        scene_caption: 0
+        image_position: 3
+        image_relative_position: 3
+        object_orientation: 2
+        egocentric_reltaion: 3
+        allocentric_relation: 3
+
+  - name: qa_aggregate
+    kind: qa_aggregate
+    enabled: true
+    resume: true
+    depends_on: qa_metadata
+    output: data.jsonl
+    params: {}
+
+  - name: qa_export
+    kind: qa_export
+    enabled: true
+    resume: true
+    depends_on: qa_aggregate
+    output: data.jsonl
+    params:
+      shard_size: 8192
+      # Set this to your real image root if file_path in refined data is relative.
+      image_root: null

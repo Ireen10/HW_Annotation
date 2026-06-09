@@ -8,4 +8,4 @@ samples/
 artifacts/
 tests/
 config/*.yaml
-!config/pipeline.example.yaml
+!config/*.example.yaml
